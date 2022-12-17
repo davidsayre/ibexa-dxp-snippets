@@ -1,0 +1,6 @@
+# hack to make ezlandingpage indexable
+services:
+    ibexa.field_type.indexable.ezlandingpage:
+        class: App\Ibexa\Core\FieldType\LandingPage\SearchField
+        tags:
+            - { name: ibexa.field_type.indexable, alias: ezlandingpage }
