@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+/**
+ * Author: David Sayre
+ */
+
 use eZ\Publish\Core\Repository\Values\Content\TrashItem;
 use Ibexa\AdminUi\Form\Data\Trash\TrashEmptyData;
 use Ibexa\Contracts\Core\Repository\Values\Content\Query;
@@ -35,21 +39,12 @@ class EmptyTrashCommand extends Command
             ->setDescription('Empty trash')
             ->addOption(
                 'limit',
-                'n',
+                'l',
                 InputOption::VALUE_OPTIONAL,
-                'item limit',
+                'Item limit',
                 100
             )
         ;
-    }
-
-    protected function initialize(InputInterface $input, OutputInterface $output): void
-    {
-        $timeout = $input->getOption('timeout');
-
-        if (!is_numeric($timeout)) {
-            throw new InvalidArgumentException('Timeout value has to be an integer.');
-        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
