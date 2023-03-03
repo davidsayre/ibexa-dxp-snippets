@@ -1,12 +1,13 @@
 <?php
 
+/**
+ * Author @ David Sayre
+ * Repo: https://github.com/davidsayre/ibexa-dxp-snippets
+ */
+
 declare(strict_types=1);
 
 namespace App\Command;
-
-/**
- * Author: David Sayre
- */
 
 use eZ\Publish\Core\Repository\Values\Content\TrashItem;
 use Ibexa\AdminUi\Form\Data\Trash\TrashEmptyData;
