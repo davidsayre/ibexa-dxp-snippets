@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Author @ David Sayre
+ * Repo: https://github.com/davidsayre/ibexa-dxp-snippets
+ */
+
+declare(strict_types=1);
+
 namespace App\Controller\Ibexa\QueryType;
 
 use Ibexa\Contracts\Core\Repository\SearchService;

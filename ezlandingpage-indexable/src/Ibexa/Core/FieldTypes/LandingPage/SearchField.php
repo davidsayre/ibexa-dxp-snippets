@@ -1,8 +1,12 @@
 <?php
+
 /**
  * Author @ David Sayre
  * Repo: https://github.com/davidsayre/ibexa-dxp-snippets
  */
+
+declare(strict_types=1);
+
 namespace App\Ibexa\Core\FieldType\LandingPage;
 
 use Ibexa\Contracts\Core\FieldType\Indexable;
