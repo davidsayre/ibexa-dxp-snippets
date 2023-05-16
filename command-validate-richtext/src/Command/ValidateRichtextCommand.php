@@ -9,11 +9,9 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\ParameterType;
 use eZ\Publish\Core\Repository\Values\Content\Content;
-use Ibexa\AdminUi\Behat\Component\Fields\RichText;
-use Ibexa\Contracts\Core\Repository\Values\Content\Query;
 use Ibexa\Core\Repository\ContentService;
 use Ibexa\Core\Repository\Repository;
 use Ibexa\FieldTypeRichText\FieldType\RichText\Value as RichTextValue;
@@ -23,42 +21,43 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Ibexa\Core\Persistence\Legacy\Content\Language\Gateway\DoctrineDatabase;
-class ValidateRichtextCommand extends Command
+
+class ValidateContentRichtextCommand extends Command
 {
 
-    /**
-     * The native Doctrine connection.
-     *
-     * @var \Doctrine\DBAL\Connection
-     */
-    protected $connection;
-
+    protected Connection $connection;
     protected $contentService;
-
     protected $repository;
-
     protected $logger;
 
-    public const COMMAND_NAME = 'app:validate-richtext';
+    protected InputInterface $input;
+    protected OutputInterface $output;
+
+    public const COMMAND_NAME = 'app:validate-content:richtext';
+
 
     /**
      * @throws \Doctrine\DBAL\DBALException
      */
-    public function __construct(Connection $connection, Repository $repository, ContentService $contentService, LoggerInterface $validateRichtextLogger)
+    public function __construct(
+        Connection $connection,
+        Repository $repository,
+        ContentService $contentService,
+        LoggerInterface $validateContentLogger
+    )
     {
         parent::__construct("name");
         $this->connection = $connection;
         $this->repository = $repository;
         $this->contentService = $contentService;
-        $this->logger = $validateRichtextLogger;
+        $this->logger = $validateContentLogger;
     }
 
     protected function configure(): void
     {
         $this
             ->setName(self::COMMAND_NAME)
-            ->setDescription('Validate Richtext')
+            ->setDescription('Validate Content Richtext')
             ->addOption(
                 'content_id',
                 'i',
@@ -109,6 +108,9 @@ class ValidateRichtextCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $this->input = $input;
+        $this->output = $output;
+
         $contentId = $input->getOption('content_id');
         $contentClassId = $input->getOption('contentclass_id');
         $offset = $input->getOption('offset');

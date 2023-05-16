@@ -24,24 +24,38 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ValidateContentRelationsCommand extends Command {
 
+    const STATUS_VALID = "valid";
+    const STATUS_INVALID = "invalid";
+    const STATUS_UNKNOWN = "unknown";
+    const STATUS_ERROR = "error";
+
     protected Connection $connection;
     protected $contentService;
     protected $repository;
     protected $logger;
+
+    protected InputInterface $input;
+    protected OutputInterface $output;
+
     protected $reportItems = array();
 
-    public const COMMAND_NAME = 'app:validate-content-relations';
+    public const COMMAND_NAME = 'app:validate-content:relations';
 
     /**
      * @throws \Doctrine\DBAL\DBALException
      */
-    public function __construct(Connection $connection, Repository $repository, ContentService $contentService, LoggerInterface $validateRichtextLogger)
+    public function __construct(
+        Connection $connection,
+        Repository $repository,
+        ContentService $contentService,
+        LoggerInterface $validateContentLogger
+    )
     {
         parent::__construct("name");
         $this->connection = $connection;
         $this->repository = $repository;
         $this->contentService = $contentService;
-        $this->logger = $validateRichtextLogger;
+        $this->logger = $validateContentLogger;
     }
 
     protected function configure(): void
@@ -101,6 +115,9 @@ class ValidateContentRelationsCommand extends Command {
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $this->input = $input;
+        $this->output = $output;
+
         $contentId = $input->getOption('content_id');
         $contentClassId = $input->getOption('contentclass_id');
         $offset = intval($input->getOption('offset'));
@@ -118,7 +135,11 @@ class ValidateContentRelationsCommand extends Command {
         $count = 0 + $offset;
         foreach($contentIdRows as $row) {
             $count++;
+            /** @var Content $content */
             $content = $this->getContentById($row['id']);
+            $logPrefix = "ContentId [".$content->id."] ".$content->getName();
+            $output->writeln($logPrefix);
+            // HOLD $this->logger->info($logPrefix);
             $this->checkContentFieldData($content);
         }
 
@@ -134,7 +155,6 @@ class ValidateContentRelationsCommand extends Command {
 
     protected function checkContentFieldData(Content $content) {
         $cid = (int) $content->id;
-        echo "ContentId [".$cid."] ".$content->getName();
         $fields = $content->getFields();
         foreach ($fields as $field) {
             $fieldReferenceContentIds = array();
@@ -157,7 +177,7 @@ class ValidateContentRelationsCommand extends Command {
                             'content_id'=>$cid,
                             'field'=>$fieldIdentifier,
                             'type'=>$fieldType,
-                            'status'=>"error"
+                            'status'=>self::STATUS_ERROR
                         );
                     }
                     break;
@@ -209,7 +229,6 @@ class ValidateContentRelationsCommand extends Command {
             }
 
         }
-        echo "\n"; // end of item row
 
         // lookup if contentId's found in fields and if they are valid / published
         // If invalid, then log error
@@ -241,7 +260,7 @@ class ValidateContentRelationsCommand extends Command {
 
     protected function queryContentExists($contentId) {
         if(empty($contentId)) {
-            return "empty"; // no check
+            return self::STATUS_UNKNOWN; // no check
         }
         $qb = $this->connection->createQueryBuilder();
         $qb->select('id')
@@ -250,25 +269,30 @@ class ValidateContentRelationsCommand extends Command {
             ->setParameter('contentId',$contentId);
         $result = $qb->execute()->fetchOne();
         if(!empty($result)){
-            return "valid";
+            return self::STATUS_VALID;
         }
-        return "invalid";
+        return self::STATUS_INVALID;
     }
 
     protected function displayReport() {
         echo "--- Checks ---\n";
         foreach ($this->reportItems as $error) {
-            if($error['status'] !== "valid") {
-                echo "content_id: ".$error['content_id']." ";
-                echo "[".$error['field']."] ";
-                echo "(".$error['type'].") ";
+            // show NOT valid entries
+            if($error['status'] !== self::STATUS_VALID) {
+                $message = "";
+                $message .= "content_id: ".$error['content_id']." ";
+                $message .= "[".$error['field']."] ";
+                $message .= "(".$error['type'].") ";
                 if(array_key_exists('ref_content_id',$error)){
-                    echo "ref_content_id: ".$error['ref_content_id']." ";
+                    $message .= "ref_content_id: ".$error['ref_content_id']." ";
                 }
                 if(array_key_exists('status',$error)){
-                    echo $error['status']." ";
+                    $message .= $error['status']." ";
                 }
-                echo "\n";
+                $message .= "\n";
+                // log errors to file
+                $this->logger->error($message);
+                $this->output->writeLn($message);
             }
         }
         echo "--- ------ ---\n";

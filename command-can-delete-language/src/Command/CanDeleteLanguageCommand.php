@@ -11,14 +11,15 @@ namespace App\Command;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
+use Ibexa\Core\Persistence\Legacy\Content\Language\Gateway\DoctrineDatabase;
 use InvalidArgumentException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Ibexa\Core\Persistence\Legacy\Content\Language\Gateway\DoctrineDatabase;
 
-Class CanDeleteLanguageCommand extends Command
+
+class CanDeleteLanguageCommand extends Command
 {
 
     /**
