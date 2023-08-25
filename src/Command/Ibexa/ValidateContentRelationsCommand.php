@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * Author: David Sayre / Allegiance Group
+ */
 
 namespace App\Command\Ibexa;
 
