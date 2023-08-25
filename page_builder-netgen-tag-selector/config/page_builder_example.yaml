@@ -1,0 +1,22 @@
+ibexa_fieldtype_page:
+
+    blocks:
+        related_content:
+            name: Related Content
+            category: Custom
+            thumbnail: /bundles/ibexaicons/img/all-icons.svg#menu
+            attributes:
+                header:
+                    type: string
+                    name: Block Header
+                    options:
+                        help:
+                            text: '< 100 char (not often used). Default: Learn More'
+                            html: false
+                tags:
+                    type: tag_selector
+                    name: Filter by Tags
+                    options:
+                        help:
+                            text: "Match by tag or leave blank to return latest of this content type (excluding self)"
+                            html: false

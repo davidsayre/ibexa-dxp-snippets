@@ -3,4 +3,8 @@
 
 see [ezlandingpage-indexable/README.md](ezlandingpage-indexable/README.md)
 
-see [command-empty-trash/README.md](command-empty-trash/README.md)
+see [netgen-elasticsearch-tags-visitor/README.md](netgen-elasticsearch-tags-visitor/README.md)
+see [querytype-content-field/README.md](querytype-content-field/README.md)
+
+
+see [./src/Command/Ibexa](commands)

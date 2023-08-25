@@ -1,18 +1,15 @@
 <?php
 
-/**
- * Author @ David Sayre
- * Repo: https://github.com/davidsayre/ibexa-dxp-snippets
- */
 
-declare(strict_types=1);
-
-namespace App\Command;
+namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
+use Ibexa\Contracts\Core\Repository\PermissionResolver;
+use Ibexa\Contracts\Core\Repository\UserService;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
 use Ibexa\Core\Repository\ContentService;
 use Ibexa\Core\Repository\Repository;
+
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -20,17 +17,21 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ValidateContentVersionCommand extends Command {
+class DeleteContentMissingLocationCommand extends Command {
 
     protected Connection $connection;
-    protected $contentService;
-    protected $repository;
+    protected Repository $repository;
+    protected ContentService $contentService;
+    protected UserService $userService;
+    protected PermissionResolver $permissionResolver;
     protected $logger;
 
     protected InputInterface $input;
     protected OutputInterface $output;
+    protected $save = false;
+    protected $totalDeleted = 0;
 
-    public const COMMAND_NAME = 'app:validate-content:versions';
+    public const COMMAND_NAME = 'app:delete-content-missing-location';
 
     /**
      * @throws \Doctrine\DBAL\DBALException
@@ -39,26 +40,36 @@ class ValidateContentVersionCommand extends Command {
         Connection $connection,
         Repository $repository,
         ContentService $contentService,
-        LoggerInterface $validateContentLogger
+        LoggerInterface $validateContentLogger,
+        UserService $userService,
+        PermissionResolver $permissionResolver
     )
     {
-        parent::__construct("name");
+        parent::__construct(self::COMMAND_NAME);
         $this->connection = $connection;
         $this->repository = $repository;
         $this->contentService = $contentService;
         $this->logger = $validateContentLogger;
+        $this->userService = $userService;
+        $this->permissionResolver = $permissionResolver;
     }
 
     protected function configure(): void
     {
         $this
-            ->setName(self::COMMAND_NAME)
-            ->setDescription('Validate Content Versions')
+
+            ->setDescription('Validate Content Tree')
             ->addOption(
                 'content_id',
                 'i',
                 InputOption::VALUE_REQUIRED,
                 'specific Content ID; else query content by limit'
+            )
+            ->addOption(
+                'content-status',
+                't',
+                InputOption::VALUE_REQUIRED,
+                'specific content status 0/Draft; 1/Published; 2/Pending; 3/Archived; 4/Rejected; 5/Internal Draft; 6/Repeat; 7/Queued'
             )
             ->addOption(
                 'offset',
@@ -74,6 +85,8 @@ class ValidateContentVersionCommand extends Command {
                 'Query limit',
                 10
             )
+            ->addOption('remote-id-prefix',null,InputOption::VALUE_OPTIONAL,'Remote ID prefix')
+            ->addOption('delete-confirm',null,InputOption::VALUE_OPTIONAL,'CONFIRM DELETION (CAREFUL) requires remote-id-prefix')
         ;
     }
 
@@ -99,24 +112,37 @@ class ValidateContentVersionCommand extends Command {
         $this->output = $output;
 
         $contentId = $input->getOption('content_id');
+        $contentStatus = $input->getOption('content-status');
         $offset = intval($input->getOption('offset'));
         $limit = intval($input->getOption('limit'));
+        $remoteIdPrefix = $input->getOption('remote-id-prefix');
+        $deleteConfirm = $input->getOption('delete-confirm');
 
-        $output->writeln('Running ..');
-        $output->writeln('');
+        $this->save = boolval($deleteConfirm);
+
+        if($this->save === true) {
+            $this->runAsUser('admin');
+        }
+
+        $this->output->writeln('Running ..');
+        $this->output->writeln('');
 
         if(!empty($contentId) && is_numeric($contentId)) {
             $contentIdRows = array(array('id'=>$contentId));
         } else {
-            $contentIdRows = $this->queryContentListByContentType($offset, $limit);
+            $contentIdRows = $this->queryContentListByContentType($offset, $limit, $contentStatus, $remoteIdPrefix);
         }
 
         $count = 0 + $offset;
+
         foreach($contentIdRows as $row) {
             $count++;
             $content = $this->getContentById($row['id']);
-            $this->logger->error("contentID: [".$content->id."] ".$content->getName()." missing ezcontentobject_name record");
-            $this->logger->info("SQL: ".$this->generateSQLFixContentName($content));
+            $logPrefix = "contentID: [".$content->id."] '".$content->getName()."' (".$content->getContentType()->identifier.") [status ".$content->versionInfo->status."] [".$content->contentInfo->remoteId."] ";
+            $output->writeln( $logPrefix." no location");
+            if(!empty($remoteIdPrefix) && $deleteConfirm === "1") {
+                $this->deleteContent($content, $logPrefix);
+            }
         }
 
         // Summary:
@@ -126,47 +152,23 @@ class ValidateContentVersionCommand extends Command {
 
     }
 
-    protected function generateSQLFixContentName(Content $content) {
-        /*
-         * insert into ezcontentobject_name(
-            content_translation
-            , content_version
-            , contentobject_id
-            , language_id
-            , `name`
-            , real_translation
-            )
-            values(
-            'eng-US'
-            ,	95
-            ,	55514
-            ,	2
-            ,	'Friday, October 28, 2022'
-            ,'eng-US')
-         */
+    public function runAsUser($sUserLogin) {
+        $user = $this->userService->loadUserByLogin($sUserLogin);
+        $this->permissionResolver->setCurrentUserReference($user);
+    }
 
-        $sql = "
- insert into ezcontentobject_name(content_translation, content_version, contentobject_id, language_id, `name`, real_translation)
- values(':languageKey', :version, :contentId, :languageId, ':contentName', ':realTranslation');";
-
-        $languageKey = $content->versionInfo->initialLanguageCode;
-        $version = $content->versionInfo->versionNo;
-        $contentId = $content->id;
-        $languageId = $content->versionInfo->getInitialLanguage()->id;
-        $contentName = empty($content->getName()) ? "new content" :  $content->getName();
-        $realTranslation = $content->versionInfo->initialLanguageCode;
-
-        $sql = str_replace(':languageKey',$languageKey, $sql);
-        $sql = str_replace(':version',$version, $sql);
-        $sql = str_replace(':contentId',$contentId, $sql);
-        $sql = str_replace(':languageId',$languageId, $sql);
-        $sql = str_replace(':contentName',$contentName, $sql);
-        $sql = str_replace(':realTranslation',$realTranslation, $sql);
-        return $sql;
+    public function deleteContent(Content $content,$logPrefix) {
+        if($this->save === true) {
+            $this->contentService->deleteContent($content->contentInfo);
+            $this->output->writeLn($logPrefix."[Deleted]"); // linebreak
+            $this->totalDeleted++;
+        } else {
+            $this->output->writeln($logPrefix."Dry Run");
+        }
 
     }
 
-    protected function queryContentListByContentType($offset, $limit){
+    protected function queryContentListByContentType($offset, $limit, $contentStatus = "", $remoteIdPrefix = ""){
         /*
          * select * from ezcontentobject where id not in (select contentobject_id from ezcontentobject_name)
          */
@@ -174,9 +176,20 @@ class ValidateContentVersionCommand extends Command {
         $qb = $this->connection->createQueryBuilder();
         $qb->select('id');
         $qb->from('ezcontentobject');
-        $qb->where('id not in (select contentobject_id from ezcontentobject_name)');
+        $qb->where('1 = 1');
+        if(!empty($contentStatus)){
+            $qb->andWhere('status = :status');
+            $qb->setParameter('status',$contentStatus);
+        }
+        if(!empty($remoteIdPrefix)){
+            $qb->andWhere('remote_id like  "'.$remoteIdPrefix."%".'"'); // like as var
+        }
+        $qb->andWhere('id not in (select contentobject_id from ezcontentobject_tree)');
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
+
+        echo $qb->getSQL()."\n";
+        echo print_r($qb->getParameters());
 
         return $qb->execute()->fetchAllAssociative();
     }
@@ -193,7 +206,6 @@ class ValidateContentVersionCommand extends Command {
             }
         );
     }
-
 }
 
 ?>

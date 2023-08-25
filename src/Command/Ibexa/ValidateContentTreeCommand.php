@@ -1,18 +1,14 @@
 <?php
 
-/**
- * Author @ David Sayre
- * Repo: https://github.com/davidsayre/ibexa-dxp-snippets
- */
 
-declare(strict_types=1);
-
-namespace App\Command;
+namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
+use Ibexa\Contracts\Core\Repository\LocationService;
 use Ibexa\Contracts\Core\Repository\PermissionResolver;
 use Ibexa\Contracts\Core\Repository\UserService;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
+use Ibexa\Contracts\Core\Repository\Values\Content\Location;
 use Ibexa\Core\Repository\ContentService;
 use Ibexa\Core\Repository\Repository;
 
@@ -28,6 +24,7 @@ class ValidateContentTreeCommand extends Command {
     protected Connection $connection;
     protected Repository $repository;
     protected ContentService $contentService;
+    protected LocationService $locationService;
     protected UserService $userService;
     protected PermissionResolver $permissionResolver;
     protected $logger;
@@ -46,15 +43,17 @@ class ValidateContentTreeCommand extends Command {
         Connection $connection,
         Repository $repository,
         ContentService $contentService,
+        LocationService $locationService,
         LoggerInterface $validateContentLogger,
         UserService $userService,
         PermissionResolver $permissionResolver
     )
     {
-        parent::__construct("name");
+        parent::__construct(self::COMMAND_NAME);
         $this->connection = $connection;
         $this->repository = $repository;
         $this->contentService = $contentService;
+        $this->locationService = $locationService;
         $this->logger = $validateContentLogger;
         $this->userService = $userService;
         $this->permissionResolver = $permissionResolver;
@@ -63,20 +62,8 @@ class ValidateContentTreeCommand extends Command {
     protected function configure(): void
     {
         $this
-            ->setName(self::COMMAND_NAME)
+            
             ->setDescription('Validate Content Tree')
-            ->addOption(
-                'content_id',
-                'i',
-                InputOption::VALUE_REQUIRED,
-                'specific Content ID; else query content by limit'
-            )
-            ->addOption(
-                'content-status',
-                't',
-                InputOption::VALUE_REQUIRED,
-                'specific content status 0/Draft; 1/Published; 2/Pending; 3/Archived; 4/Rejected; 5/Internal Draft; 6/Repeat; 7/Queued'
-            )
             ->addOption(
                 'offset',
                 'o',
@@ -91,17 +78,11 @@ class ValidateContentTreeCommand extends Command {
                 'Query limit',
                 10
             )
-            ->addOption('remote-id-prefix',null,InputOption::VALUE_OPTIONAL,'Remote ID prefix')
-            ->addOption('delete-confirm',null,InputOption::VALUE_OPTIONAL,'CONFIRM DELETION (CAREFUL) requires remote-id-prefix')
         ;
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $contentId = $input->getOption('content_id');
-        if (!empty($contentId) && !is_numeric($contentId)) {
-            throw new InvalidArgumentException('content_id optional value has to be an integer.');
-        }
         $offset = $input->getOption('offset');
         if (!empty($offset) && !is_numeric($offset)) {
             throw new InvalidArgumentException('offset optional value has to be an integer.');
@@ -117,39 +98,38 @@ class ValidateContentTreeCommand extends Command {
         $this->input = $input;
         $this->output = $output;
 
-        $contentId = $input->getOption('content_id');
-        $contentStatus = $input->getOption('content-status');
         $offset = intval($input->getOption('offset'));
         $limit = intval($input->getOption('limit'));
-        $remoteIdPrefix = $input->getOption('remote-id-prefix');
-        $deleteConfirm = $input->getOption('delete-confirm');
 
-        $this->save = boolval($deleteConfirm);
-
-        if($this->save === true) {
-            $this->runAsUser('admin');
-        }
+       $this->runAsUser('admin');
 
         $this->output->writeln('Running ..');
         $this->output->writeln('');
 
-        if(!empty($contentId) && is_numeric($contentId)) {
-            $contentIdRows = array(array('id'=>$contentId));
-        } else {
-            $contentIdRows = $this->queryContentListByContentType($offset, $limit, $contentStatus, $remoteIdPrefix);
-        }
+        $locationIdRows = $this->queryInvalidMainLocations($offset, $limit);
 
         $count = 0 + $offset;
 
-        foreach($contentIdRows as $row) {
+        foreach($locationIdRows as $row) {
             $count++;
-            $content = $this->getContentById($row['id']);
-            $logPrefix = "contentID: [".$content->id."] '".$content->getName()."' (".$content->getContentType()->identifier.") [status ".$content->versionInfo->status."] [".$content->contentInfo->remoteId."] ";
-            $output->writeln( $logPrefix." no location");
-            if(!empty($remoteIdPrefix) && $deleteConfirm === "1") {
-                $this->deleteContent($content, $logPrefix);
-            }
+            $mainNodeId = $row['main_node_id'];
+            $nodeId = $row['node_id'];
+            $contentId = $row['content_id'];
+            $content = $this->getContentById($contentId);
+            //$location = $this->getLocationById($locationId);
+            $logPrefix = "contentID: ["
+                .$content->id."] '"
+                .$content->getName()
+                ."' (".$content->getContentType()->identifier
+                .") [status "
+                .$content->versionInfo->status."] "
+                ."mainLocationID: [".$mainNodeId."] "
+                ."nodeId: [".$nodeId."]"
+            ;
+            $output->writeln( $logPrefix);
         }
+
+        $output->writeln("Check above. There should be at least 1 row with a matching main_node_id = node_id");
 
         // Summary:
         echo "Query: count: ".$count." offset: ".$offset. " limit: ".$limit."\n";
@@ -163,44 +143,6 @@ class ValidateContentTreeCommand extends Command {
         $this->permissionResolver->setCurrentUserReference($user);
     }
 
-    public function deleteContent(Content $content,$logPrefix) {
-        if($this->save === true) {
-            $this->contentService->deleteContent($content->contentInfo);
-            $this->output->writeLn($logPrefix."[Deleted]"); // linebreak
-            $this->totalDeleted++;
-        } else {
-            $this->output->writeln($logPrefix."Dry Run");
-        }
-
-    }
-
-    protected function queryContentListByContentType($offset, $limit, $contentStatus = "", $remoteIdPrefix = ""){
-        /*
-         * select * from ezcontentobject where id not in (select contentobject_id from ezcontentobject_name)
-         */
-        // get set of contentIDs
-        $qb = $this->connection->createQueryBuilder();
-        $qb->select('id');
-        $qb->from('ezcontentobject');
-        $qb->where('1 = 1');
-        if(!empty($contentStatus)){
-            $qb->andWhere('status = :status');
-            $qb->setParameter('status',$contentStatus);
-        }
-        if(!empty($remoteIdPrefix)){
-            $qb->andWhere('remote_id like  "'.$remoteIdPrefix."%".'"'); // like as var
-        }
-        $qb->andWhere('id not in (select contentobject_id from ezcontentobject_tree)');
-        $qb->setMaxResults($limit);
-        $qb->setFirstResult($offset);
-
-        echo $qb->getSQL()."\n";
-        echo print_r($qb->getParameters());
-
-        return $qb->execute()->fetchAllAssociative();
-    }
-
-
     /**
      * @param $contentId
      * @return Content
@@ -211,6 +153,32 @@ class ValidateContentTreeCommand extends Command {
                 return $this->contentService->loadContent($contentId);
             }
         );
+    }
+
+    /**
+     * @param $locationId
+     * @return Location
+     */
+    protected function getLocationById($locationId) {
+        return $this->repository->sudo(
+            function () use ($locationId) {
+                return $this->locationService->loadLocation($locationId);
+            }
+        );
+    }
+
+    protected function queryInvalidMainLocations($offset, $limit) {
+        $qb = $this->connection->createQueryBuilder();
+        $qb->addSelect('contentobject_id as content_id, main_node_id, node_id');
+        $qb->from('ezcontentobject_tree');
+        $qb->where('contentobject_id in (select contentobject_id from ezcontentobject_tree where main_node_id != node_id)');
+        $qb->setMaxResults($limit);
+        $qb->setFirstResult($offset);
+        $qb->orderBy('contentobject_id');
+
+        echo $qb->getSQL()."\n";
+
+        return $qb->execute()->fetchAllAssociative();
     }
 
 }

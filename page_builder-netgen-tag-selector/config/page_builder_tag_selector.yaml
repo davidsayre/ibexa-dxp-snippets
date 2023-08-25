@@ -1,0 +1,7 @@
+services:
+    app.block.attribute.tag_selector:
+        class: Ibexa\FieldTypePage\FieldType\Page\Block\Attribute\FormTypeMapper\GenericFormTypeMapper
+        arguments:
+            $formTypeClass: App\Block\Attribute\TagSelectorAttributeType
+        tags:
+            - { name: ibexa.page_builder.form_type_attribute.mapper, alias: tag_selector }

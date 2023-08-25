@@ -1,0 +1,147 @@
+{# this is a clone from netgen assigned to the 'tag_selector'_widget #}
+{% trans_default_domain 'netgen_tags_admin' %}
+{% block tag_selector_widget %}
+
+    <!-- NOTE: using the {{ id }} becuase it MUST BE UNIQUE on the page to work -->
+
+    <div class="ibexa-field-edit__data ibexa-field-edit__data ibexa-field-edit__data--compound">
+        <div class="ibexa-data-source ibexa-data-source">
+            <div class="ng-tags-input-ui">
+                <div class="eztags-wrapper">
+                    <div id="eztags{{ id }}" class="tagssuggest"
+                         data-eztags
+                         data-autocomplete-url="{{ path('netgen_tags_admin_field_autocomplete') }}"
+                         data-children-url="{{ path('netgen_tags_admin_field_children') }}"
+                         data-builder="Default"
+                         data-max-results="{{ ibexa.configResolver.parameter('field.autocomplete_limit', 'netgen_tags') }}"
+                         data-has-add-access="0"
+                         data-subtree-limit="0"
+                         data-hide-root-tag="0"
+                         data-max-tags="0"
+                         data-locale="{{ mainLocale|default("eng-US") }}"
+                         data-icon-path=""
+                    >
+                        <!-- TODO: there is a BUG with the javascript (not the twig) where the tags will be added to the visible selector.
+                         A FIX is needed for jquery.netgetn.tags.js to allwo multiple pickers / inputs on the same form targeting correctly
+                        -->
+
+                        <!-- ids hash -> value -> storage -->
+                        {{ form_widget(form, {attr: {class: 'tagids'}}) }}
+
+                        <!-- example: block_configuration_attributes_tags_keywords_value -->
+                        <input type="hidden" id="{{ id }}_text" class="tags-input-field">
+                        <input type="hidden" id="{{ id }}_parent_ids" class="tagpids" value="{{ form.vars.parent_ids }}">
+                        <input type="hidden" id="{{ id }}_keywords" class="tagnames" value="{{ form.vars.keywords }}">
+                        <input type="hidden" id="{{ id }}_locales" class="taglocales" value="{{ form.vars.locales }}">
+                    </div>
+
+                    <div class="jqmDialog parent-selector-tree browse-tags" id="parent-selector-browse-tree-{{ id }}">
+                        <div class="jqmdIn">
+                            <div class="jqmdTC">
+                                <span class="jqmdTCLeft"></span>
+                                <span class="jqDrag">Browse tags</span>
+                                <span class="jqmdTCRight"></span>
+                            </div>
+                            <div class="jqmdBL">
+                                <div class="jqmdBR">
+                                    <div class="jqmdBC">
+                                        <div class="jqmdBCIn">
+                                            <div class="tags-modal-tree">
+                                                <div
+                                                        class="tags-tree"
+                                                        data-path="/admin/tags/admin/tree/get/_tagId_"
+                                                        data-rootTagId="0"
+                                                        data-showRootTag="true"
+                                                        data-selectedTagPath=""
+                                                        data-disableSubtree=""
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="#" class="jqmdX jqmClose"></a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="ibexa-form-error"></div>
+    </div>
+
+    {#
+    <div class="ng-tags-input {% if errors|length > 0 %} error-input{% endif %}">
+        <div class="tags-modal-tree" data-noValueText="{{ '(' ~ 'tag.tree.no_tag_selected'|trans ~ ')' }}">
+            {{- form_label(form) -}}
+
+            <input type="hidden" class="tag-id" {{ block('widget_attributes') }} value="{% if tag is not null %}{{ tag.id }}{% else %}0{% endif %}" />
+            <span class="tag-keyword">{% if tag is not null %}{{ tag.keyword }}{% else %}({{ 'tag.tree.no_tag_selected'|trans }}){% endif %}</span>
+            <button type="button" class="tags-btn modal-tree-button">{{ 'tag.tree.select_tag'|trans }}</button>
+
+            <div class="ng-modal">
+                <div class="content">
+                    <span class="close"><i class="md-icon">close</i></span>
+                    {% include '@NetgenTags/admin/tree.html.twig' with {
+                        'selectedTag': tag,
+                        'disableSubtree': disableSubtree
+                    } %}
+                </div>
+            </div>
+
+            {{- form_errors(form) -}}
+        </div>
+    </div>
+    #}
+
+    {#
+    <div id="eztags{{ widget_id }}" class="tagssuggest" data-eztags="" data-autocomplete-url="/admin/tags/admin/field/autocomplete"
+         data-children-url="/admin/tags/admin/field/children" data-builder="Default" data-max-results="25"
+         data-has-add-access="1" data-subtree-limit="54" data-hide-root-tag="0" data-max-tags="0" data-locale="eng-US"
+         data-icon-path="">
+
+        <input type="hidden" id="ezplatform_content_forms_content_edit_fieldsData_tags_value_ids"
+               name="ezplatform_content_forms_content_edit[fieldsData][tags][value][ids]" class="tagids"
+               value="317|#507|#98|#315">
+        <input type="hidden" id="ezplatform_content_forms_content_edit_fieldsData_tags_value_parent_ids"
+               name="ezplatform_content_forms_content_edit[fieldsData][tags][value][parent_ids]" class="tagpids"
+               value="506|#506|#506|#506">
+        <input type="hidden" id="ezplatform_content_forms_content_edit_fieldsData_tags_value_keywords"
+               name="ezplatform_content_forms_content_edit[fieldsData][tags][value][keywords]" class="tagnames"
+               value="Amphibians|#Arachnids|#Birds|#Insects">
+        <input type="hidden" id="ezplatform_content_forms_content_edit_fieldsData_tags_value_locales"
+               name="ezplatform_content_forms_content_edit[fieldsData][tags][value][locales]" class="taglocales"
+               value="eng-US|#eng-US|#eng-US|#eng-US">
+        <div class="tagssuggest-ui">
+            <div class="tags-output"><label>Selected tags:</label>
+                <div class="tags-list tags-listed"><p class="loading">Loading...</p>
+                    <p class="no-results">There are no selected tags.</p>
+                    <ul class="float-break clearfix js-tags-selected with_sortable ui-sortable">
+                        <li data-cid="c12"><!--<img src="" />-->Amphibians<a href="#" class="js-tags-remove"
+                                                                             title="Remove tag">×</a></li>
+                        <li data-cid="c15"><!--<img src="" />-->Arachnids<a href="#" class="js-tags-remove"
+                                                                            title="Remove tag">×</a></li>
+                        <li data-cid="c56"><!--<img src="" />-->Birds<a href="#" class="js-tags-remove"
+                                                                        title="Remove tag">×</a></li>
+                        <li data-cid="c228"><!--<img src="" />-->Insects<a href="#" class="js-tags-remove"
+                                                                           title="Remove tag">×</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="tags-input">
+                <!--<label>Suggested tags:</label><div class="tags-list tags-suggested no-results"><p class="loading">Loading...</p><p class="no-results">There are no tags to suggest.</p><ul class="float-break clearfix js-tags-suggested"></div>-->
+                <div class="tagssuggestfieldwrap"><input class="tagssuggestfield tags-input-field" type="text" size="70"
+                                                         value="" autocomplete="off">
+                    <div class="tagssuggestresults jsonSuggestResults" style="display: none;">
+                        <div class="results-wrap"></div>
+                    </div>
+                </div>
+                <input type="button" value="Browse" class="btn ibexa-btn ibexa-btn--secondary button-browse-tag"><input
+                        type="button" value="Add new"
+                        class="btn ibexa-btn ibexa-btn--secondary button-add-tag button-disabled" disabled="disabled">
+            </div>
+        </div>
+    </div>
+    #}
+
+{% endblock %}

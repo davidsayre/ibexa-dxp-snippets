@@ -1,13 +1,8 @@
 <?php
 
-/**
- * Author @ David Sayre
- * Repo: https://github.com/davidsayre/ibexa-dxp-snippets
- */
-
 declare(strict_types=1);
 
-namespace App\Command;
+namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
@@ -39,7 +34,7 @@ class CanDeleteLanguageCommand extends Command
      */
     public function __construct(Connection $connection)
     {
-        parent::__construct("name");
+        parent::__construct(self::COMMAND_NAME);
         $this->connection = $connection;
         $this->dbPlatform = $this->connection->getDatabasePlatform();
     }
@@ -47,7 +42,6 @@ class CanDeleteLanguageCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setName(self::COMMAND_NAME)
             ->setDescription('Can delete language')
             ->addOption(
                 'language_id',

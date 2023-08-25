@@ -1,14 +1,8 @@
 <?php
 
-/**
- * Author @ David Sayre
- * Repo: https://github.com/davidsayre/ibexa-dxp-snippets
- */
-
 declare(strict_types=1);
 
-namespace App\Command;
-
+namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
 use eZ\Publish\Core\Repository\Values\Content\Content;
@@ -46,7 +40,7 @@ class ValidateContentRichtextCommand extends Command
         LoggerInterface $validateContentLogger
     )
     {
-        parent::__construct("name");
+        parent::__construct(self::COMMAND_NAME);
         $this->connection = $connection;
         $this->repository = $repository;
         $this->contentService = $contentService;
@@ -56,7 +50,7 @@ class ValidateContentRichtextCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setName(self::COMMAND_NAME)
+            
             ->setDescription('Validate Content Richtext')
             ->addOption(
                 'content_id',
@@ -68,13 +62,15 @@ class ValidateContentRichtextCommand extends Command
                 'offset',
                 'o',
                 InputOption::VALUE_REQUIRED,
-                'Query offset'
+                'Query offset',
+                0
             )
             ->addOption(
                 'limit',
                 'm',
                 InputOption::VALUE_REQUIRED,
-                'Query limit'
+                'Query limit',
+                10
             )
             ->addOption(
                 'contentclass_id',

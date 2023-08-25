@@ -1,13 +1,7 @@
 <?php
 
-/**
- * Author @ David Sayre
- * Repo: https://github.com/davidsayre/ibexa-dxp-snippets
- */
 
-declare(strict_types=1);
-
-namespace App\Command;
+namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
@@ -51,7 +45,7 @@ class ValidateContentRelationsCommand extends Command {
         LoggerInterface $validateContentLogger
     )
     {
-        parent::__construct("name");
+        parent::__construct(self::COMMAND_NAME);
         $this->connection = $connection;
         $this->repository = $repository;
         $this->contentService = $contentService;
@@ -61,31 +55,31 @@ class ValidateContentRelationsCommand extends Command {
     protected function configure(): void
     {
         $this
-            ->setName(self::COMMAND_NAME)
+            
             ->setDescription('Validate Richtext')
             ->addOption(
-                'content_id',
-                'i',
+                'content-id',
+                null,
                 InputOption::VALUE_REQUIRED,
                 'specific Content ID; else query content by limit'
             )
             ->addOption(
                 'offset',
-                'o',
+                null,
                 InputOption::VALUE_REQUIRED,
                 'Query offset',
                 0
             )
             ->addOption(
                 'limit',
-                'm',
+                null,
                 InputOption::VALUE_REQUIRED,
                 'Query limit',
                 10
             )
             ->addOption(
-                'contentclass_id',
-                'l',
+                'contentclass-id',
+                null,
                 InputOption::VALUE_REQUIRED,
                 'Query limit'
             )
@@ -95,7 +89,7 @@ class ValidateContentRelationsCommand extends Command {
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $contentId = $input->getOption('content_id');
+        $contentId = $input->getOption('content-id');
         if (!empty($contentId) && !is_numeric($contentId)) {
             throw new InvalidArgumentException('content_id optional value has to be an integer.');
         }
@@ -107,7 +101,7 @@ class ValidateContentRelationsCommand extends Command {
         if (!empty($limit) && !is_numeric($limit)) {
             throw new InvalidArgumentException('limit optional value has to be an integer.');
         }
-        $contentClassId = $input->getOption('contentclass_id');
+        $contentClassId = $input->getOption('contentclass-id');
         if (!empty($contentClassId) && !is_numeric($contentClassId)) {
             throw new InvalidArgumentException('contentClass_id optional value has to be an integer.');
         }
@@ -118,8 +112,8 @@ class ValidateContentRelationsCommand extends Command {
         $this->input = $input;
         $this->output = $output;
 
-        $contentId = $input->getOption('content_id');
-        $contentClassId = $input->getOption('contentclass_id');
+        $contentId = $input->getOption('content-id');
+        $contentClassId = $input->getOption('contentclass-id');
         $offset = intval($input->getOption('offset'));
         $limit = intval($input->getOption('limit'));
 
