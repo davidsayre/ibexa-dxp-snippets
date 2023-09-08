@@ -1,0 +1,70 @@
+{% extends '@ibexadesign/ui/layout.html.twig' %}
+
+{% trans_default_domain 'content_lookup' %}
+
+{% block body_class %}admin-content_lookup{% endblock %}
+{% block title %}
+    {{ 'content_lookup.title'|trans|desc('Content Lookup') }}
+{% endblock %}
+
+{% block header_row %}
+{% endblock %}
+
+{% block main_container %}
+    <div class="ibexa-main-container {% block main_container_class %}{% endblock %}">
+        {% block side_column %}
+            {{ parent() }}
+        {% endblock %}
+
+        {% block content_column %}
+
+            <div class="ibexa-main-container__content-column">
+                <div class="container">
+                    <h1>Content Lookup</h1>
+                    {% block content_header %}
+                        <div class="ibexa-page-header-wrapper">
+                            <div class="ibexa-breadcrums-wrapper">
+                                {% block breadcrumbs %}{% endblock %}
+                            </div>
+                            <div class="ibexa-content-menu-wrapper">
+                                {% block context_menu %}{% endblock %}
+                            </div>
+                            <div class="ibexa-header-wrapper">
+                                {% block header %}{% endblock %}
+                            </div>
+                        </div>
+                    {% endblock %}
+                    {% block content %}
+
+                        <form action="{{ path('admin_content_lookup_by_content_id') }}" method="get">
+                            <label>
+                                Content ID:
+                                <input type="text" name="content"/>
+                            </label>
+                            <input type="submit" value="Lookup"/>
+                        </form>
+
+                        <br/>
+
+                        <form action="{{ path('admin_content_lookup_by_location_id') }}" method="get">
+                            <label>
+                                Location ID:
+                                <input type="text" name="location"/>
+                            </label>
+                            <input type="submit" value="Lookup"/>
+                        </form>
+                    {% endblock %}
+                </div>
+            </div>
+        {% endblock %}
+    </div>
+{% endblock %}
+
+
+{% block javascripts %}
+    {{ parent() }}
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+{% endblock %}
