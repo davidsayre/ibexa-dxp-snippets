@@ -1,0 +1,3 @@
+services:
+    App\Elasticsearch\Query\CriterionVisitor\FullTextVisitorDecorator:
+        decorates: Ibexa\Elasticsearch\Query\CriterionVisitor\FullTextVisitor
