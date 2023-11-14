@@ -1,0 +1,10 @@
+services:
+  ibexa.field_type.ezlandingpage: '@App\Ibexa\FieldTypePage\FieldType\LandingPage\Type'
+
+  App\Ibexa\FieldTypePage\FieldType\LandingPage\Type:
+    decorates: Ibexa\FieldTypePage\FieldType\LandingPage\Type
+    autowire: true
+    autoconfigure: false
+    public: true
+    tags:
+      - { name: ibexa.field_type, alias: ezlandingpage }
