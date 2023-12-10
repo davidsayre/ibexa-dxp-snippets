@@ -1,0 +1,2 @@
+This is derived from https://github.com/ezsystems/ezplatform-rawhtml-richtext-tag/blob/master/Resources/views/themes/standard/ezrichtext/custom_tags/rawhtml.html.twig
+Some fixes are added to the PHP and .yaml to play well.
