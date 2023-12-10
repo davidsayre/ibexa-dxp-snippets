@@ -1,7 +1,8 @@
-custom_tags:
-    rawhtml:
-        template: "@ibexadesign/ezrichtext/custom_tags/rawhtml.html.twig"
-        icon: '/bundles/ibexaicons/img/all-icons.svg#information'
-        attributes:
-            name:
-                type: string
+ibexa_fieldtype_richtext:
+    custom_tags:
+        rawhtml:
+            template: "@ibexadesign/ezrichtext/custom_tags/rawhtml.html.twig"
+            icon: '/bundles/ibexaicons/img/all-icons.svg#information'
+            attributes:
+                name:
+                    type: string
