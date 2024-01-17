@@ -1,0 +1,12 @@
+# Direct include in routes.yaml
+admin-ui.reports.content_activity:
+    path: /reports/content_activity/
+    defaults:
+        _controller: App\Controller\Admin\ReportContentActivityController::index
+        siteaccess_group_whitelist: [ admin_group ]
+
+admin-ui.reports.content_activity_download_xml:
+    path: /reports/content_activity/download_xml/
+    defaults:
+        _controller: App\Controller\Admin\ReportContentActivityController::downloadXmlContent
+        siteaccess_group_whitelist: [ admin_group ]

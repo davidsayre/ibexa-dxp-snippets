@@ -10,33 +10,35 @@ use Ibexa\Contracts\Core\Repository\Values\Content\Content;
 use Ibexa\Contracts\Core\Repository\Values\Content\Location;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
 
-
-/**
- * @Route("/content_lookup", name="admin_content_lookup")
- */
 class ContentLookupController extends AbstractController {
 
     protected $locationService;
     protected $contentService;
 
+    /**
+     * @param LocationService $locationService
+     * @param ContentService $contentService
+     */
     public function __construct(LocationService $locationService, ContentService $contentService) {
         $this->locationService = $locationService;
         $this->contentService = $contentService;
     }
 
     /**
-     * @Route("/", name="_dashboard")
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function ContentLookupDashboard(Request $request) {
+    public function index(Request $request) {
         return $this->render("@standard/content_lookup/dashboard.html.twig");
     }
 
     /**
-     * @Route("/content/", name="_by_content_id")
+     * @param Request $request
+     * @param $content
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse
      */
-    public function redirectByContentId (Request $request) {
+    public function redirectByContentId (Request $request, $content = null) {
         $contentId = $request->query->get('content');
         if(is_numeric($contentId)) {
             try {
@@ -44,7 +46,7 @@ class ContentLookupController extends AbstractController {
                 /** @var Content $content */
                 $content = $this->contentService->loadContent($contentId);
                 $location = $this->locationService->loadLocation($content->contentInfo->mainLocationId);
-                return $this->redirect("/admin/view/content/" . $contentId . "/full/1/" . $location->id);
+                return $this->redirect("/view/content/" . $contentId . "/full/1/" . $location->id);
             } catch (\Exception $e) {
 
             }
@@ -53,22 +55,24 @@ class ContentLookupController extends AbstractController {
     }
 
     /**
-     * @Route("/location/", name="_by_location_id")
+     * @param Request $request
+     * @param $location
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse
      */
-    public function redirectbyLocationId (Request $request) {
+    public function redirectbyLocationId (Request $request, $location = null) {
         $locationId = $request->query->get('location');
         if(is_numeric($locationId)) {
             try{
                 $locationId = (int) $locationId;
                 /** @var Location $location */
                 $location = $this->locationService->loadLocation($locationId);
-                return $this->redirect("/admin/view/content/".$location->contentId."/full/1/".$location->id);
+                return $this->redirect("/view/content/".$location->contentId."/full/1/".$location->id);
             } catch(\Exception $e) {
 
             }
         }
 
-        return $this->redirect("/admin/?lookup_failed");
+        return $this->redirect("/?lookup_failed");
     }
 }
 ?>

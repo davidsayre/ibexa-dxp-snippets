@@ -1,0 +1,219 @@
+{% extends '@ibexadesign/ui/layout.html.twig' %}
+
+{% block title %}{{ 'Reports > Content Activity'|trans }}{% endblock %}
+
+{%- block breadcrumbs -%}
+    {% include '@ibexadesign/ui/breadcrumbs.html.twig' with {
+        items: [
+            { value: 'breadcrumb.admin'|trans(domain='messages')|desc('Admin') },
+            { value: 'Reports > Content Activity'|trans }
+        ]
+    } %}
+{%- endblock -%}
+
+{%- block header -%}
+    {% include '@ibexadesign/ui/page_title.html.twig' with {
+        title: 'Content Activity Report'|trans,
+    } %}
+{%- endblock -%}
+
+{%- block content -%}
+    <style>
+        .sm-6 {max-width:50%;}
+        .sm-4 {max-width:33%;}
+        .sm-3 {max-width:25%;}
+        .sm-2 {max-width:16%;}
+        .row .submit {margin-top:1rem;}
+        .sm-3 .ibexa-dropdown {min-width:unset;}
+    </style>
+
+    {% if errors is defined and errors is not empty %}
+        <section class="container ibexa-container">
+        {% for error in errors %}
+            <div class="error">{{ error }}</div>
+        {% endfor %}
+        </section>
+    {% endif %}
+
+    <section class="container ibexa-container">
+        {% include '@admin/form_builder/stylesheets.component.html.twig' %}
+        {% form_theme form '@admin/ui/form_fields.html.twig' %}
+        {{ form_start(form, {
+            'attr':
+            { 'class': 'ibexa-edit-content-form'}
+        }) }}
+        <div class="row">
+            <div class="sm-3">{{ form_row(form.content_type) }}</div>
+            <div class="sm-3 field-datetime">{{ form_row(form.date_field) }}</div>
+            <div class="sm-3 field-datetime">{{ form_row(form.date_from) }}</div>
+            <div class="sm-3 field-datetime">{{ form_row(form.date_to) }}</div>
+        </div>
+        <div class="row">
+            <div class="sm-3">{{ form_row(form.section_id) }}</div>
+            <div class="sm-3">{{ form_row(form.exclude_location_ids) }}</div>
+            <div class="sm-3">{{ form_row(form.search_text) }}</div>
+            <div class="sm-3">{{ form_row(form.title) }}</div>
+
+        </div>
+        <div class="row">
+            <div class="sm-3">{{ form_row(form.tags) }}</div>
+            <div class="sm-3">{{ form_row(form.language_code) }}</div>
+            {# <div class="sm-3">{{ form_row(form.view_language) }}</div> #}
+            <div class="sm-3">{{ form_row(form.sort_dir) }}</div>
+            <div class="sm-3">{{ form_row(form.limit) }}</div>
+        </div>
+        <div class="row">
+            <div class="submit">{{ form_row(form.submit) }}</div>
+        </div>
+        {{ form_end(form) }}
+
+        <P>A browser bug requires <strong>Windows: HOLD the CTL key; Mac: HOLD the Command/Apple/Alt key</strong> and THEN click the DOWNLOAD button.</P>
+        <p>The sort defaults to 'modified'. Selecting 'Review Date' requires also selecting a specific content type (Article).</p>
+
+        <script>
+            // handleCsv = function(e) {
+            //     e.preventDefaultAction;
+            //     console.log('click');
+            // }
+            // var searchForm = document.querySelector('form[name="caf_"]');
+            // searchForm.addEventListener("submit", function(evt){
+            //     evt.preventDefault();
+            //     buttonID = evt.submitter.getAttribute('id');
+            //     if(buttonID.indexOf('submit') >= 0) {
+            //         console.log("submit button");
+            //         searchForm.setAttribute('target','');
+            //     } else if (buttonID.indexOf('xml') >= 0) {
+            //         console.log("download xml button");
+            //         searchForm.setAttribute('method','POST');
+            //         searchForm.setAttribute('target','_blank');
+            //     } else if (buttonID.indexOf('csv') >= 0) {
+            //         console.log("download csv button");
+            //         searchForm.setAttribute('method','POST');
+            //         searchForm.setAttribute('target','_blank');
+            //     }
+            //     // continue
+            //     searchForm.submit();
+            // });
+
+        </script>
+    </section>
+
+    <section class="container ibexa-container">
+
+        {#
+            itemcontent:
+                fields
+                versionInfo
+                contentType
+                internalFields
+                fieldDefinitionTranslationMap
+                prioritizedFieldLanguageCode
+        #}
+        {% if pagerfanta is defined  %}
+
+            {#  TODO abstract into config #}
+            {% set custom_text_field = 'author' %}
+            {% set custom_text_field_label = 'OL Author' %}
+            {% set custom_date_field = 'publish_date' %}
+            {% set custom_date_field_label = 'OL Reviewed' %}
+
+            {% set body_rows = [] %} {#  holder for rows/columns #}
+
+            {% for itemLocation in pagerfanta.currentPageResults %}
+
+                {# to get actual fields requires lookup, paginator doesn't provide the content object at all #}
+                {% set itemContent = itemLocation.contentInfo.id|contentid_to_content %}
+
+                {% set col_lang %}
+                    {% for lang in itemContent.versionInfo.languageCodes %}
+                        {{ lang }}
+                    {% endfor %}
+                {% endset %}
+
+                {% set col_user %}
+                    {{ itemContent.versionInfo.creator.name|default("unknown") }}
+                {% endset %}
+
+                {% set col_custom_text_field %}
+                    {% if itemContent.fields[custom_text_field] is defined %}
+                        {{ ibexa_render_field(itemContent,custom_text_field) }}
+                    {% endif %}
+                {% endset %}
+
+                {% set col_custom_date_field %}
+                    {% if itemContent.fields[custom_date_field] is defined %}
+                        {{ ibexa_render_field(itemContent,custom_date_field) }}
+                    {% endif %}
+                {% endset %}
+
+                {% set col_view %}
+                    <a href="{{ path('ibexa.content.view', {
+                        'contentId': itemLocation.contentInfo.id
+                    }) }}" target="_blank">
+                        <svg class="ibexa-icon ibexa-icon--small ibexa-input-text-wrapper__password-show">
+                            <use xlink:href="{{ ibexa_icon_path('view') }}"></use>
+                        </svg>
+                    </a>
+                {% endset %}
+
+                {% set col_xml %}
+                    <a href="{{ path('admin-ui.reports.content_activity_download_xml', {
+                        'contentId': itemLocation.contentInfo.id
+                    }) }}" target="_blank">
+                        <svg class="ibexa-icon ibexa-icon--small ibexa-input-text-wrapper__password-show">
+                            <use xlink:href="{{ ibexa_icon_path('tag') }}"></use>
+                        </svg>
+                    </a>
+                {% endset %}
+
+                {% set body_rows = body_rows|merge([{
+                    cols: [
+                        { content: itemLocation.contentInfo.name },
+                        { content: itemLocation.contentInfo.contentType.name },
+                        { content: itemLocation.contentInfo.modificationDate|date('Y-m-d H:i:s') },
+                        { content: itemLocation.contentInfo.publishedDate|date('Y-m-d H:i:s') },
+                        { content: col_lang, raw: true },
+                        { content: col_user, raw: true },
+                        { content: col_custom_text_field, raw: true },
+                        { content: col_custom_date_field, raw: true },
+                        { content: col_view, raw: true },
+                        { content: col_xml, raw: true },
+                    ],
+                }]) %}
+            {% endfor %}
+
+            {% include '@ibexadesign/ui/component/table/table.html.twig' with {
+                headline: 'Content List',
+                head_cols: [
+                    { content: 'Content name'|trans },
+                    { content: 'Content Type'|trans },
+                    { content: 'Modified'|trans },
+                    { content: 'Published'|trans },
+                    { content: 'Languages'|trans },
+                    { content: 'Modifier' },
+                    { content: custom_text_field_label },
+                    { content: custom_date_field_label },
+                    { content: 'View' },
+                    { content: 'Xml' },
+                ],
+                class: 'ibexa-table',
+                body_rows
+            } %}
+
+            {% if pagerfanta.haveToPaginate %}
+                {% include '@ibexadesign/ui/pagination.html.twig' with {
+                    'pager': pagerfanta
+                } %}
+            {% endif %}
+        {% else %}
+            <div class="no-results">
+                <p>No results</p>
+            </div>
+        {% endif %}
+    </section>
+
+{%- endblock -%}
+
+{% block javascripts %}
+    {{ encore_entry_script_tags('ibexa-admin-ui-dashboard-js', null, 'ibexa') }}
+{%- endblock -%}

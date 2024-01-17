@@ -36,7 +36,7 @@
                     {% endblock %}
                     {% block content %}
 
-                        <form action="{{ path('admin_content_lookup_by_content_id') }}" method="get">
+                        <form action="{{ path('admin-ui.content_lookup.content') }}" method="get">
                             <label>
                                 Content ID:
                                 <input type="text" name="content"/>
@@ -46,7 +46,7 @@
 
                         <br/>
 
-                        <form action="{{ path('admin_content_lookup_by_location_id') }}" method="get">
+                        <form action="{{ path('admin-ui.content_lookup.location') }}" method="get">
                             <label>
                                 Location ID:
                                 <input type="text" name="location"/>

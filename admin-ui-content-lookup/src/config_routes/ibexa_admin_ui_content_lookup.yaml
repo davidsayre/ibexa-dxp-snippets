@@ -1,0 +1,20 @@
+# Direct include in routes.yaml
+admin-ui.content_lookup.dashboard:
+    path: /content_lookup/
+    defaults:
+        _controller: App\Controller\Admin\ContentLookupController::index
+        siteaccess_group_whitelist: [ admin_group ]
+
+# Direct include in routes.yaml
+admin-ui.content_lookup.content:
+    path: /content_lookup/content/{content}
+    defaults:
+        _controller: App\Controller\Admin\ContentLookupController::redirectByContentId
+        siteaccess_group_whitelist: [ admin_group ]
+
+# Direct include in routes.yaml
+admin-ui.content_lookup.location:
+    path: /content_lookup/location/{location}
+    defaults:
+        _controller: App\Controller\Admin\ContentLookupController::redirectbyLocationId
+        siteaccess_group_whitelist: [ admin_group ]
