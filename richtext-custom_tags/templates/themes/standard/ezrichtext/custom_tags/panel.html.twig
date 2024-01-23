@@ -1,0 +1,11 @@
+<div class="panel panel-{{ params.style|default("") }}">
+    <div class="panel-heading">
+        <h3 class="panel-title">
+            {% if params.icon is defined and params.icon == 'pdf' %}
+                <i class="fa fa-file-pdf-o"></i>
+            {% endif %}
+            {{ params.title|default("") }}
+        </h3>
+    </div>
+    <div class="panel-body">{{ content|replace({'&lt;': '<', '&gt;': '>', '&quot;': '"', '&amp;': '&'})|raw }}</div>
+</div>

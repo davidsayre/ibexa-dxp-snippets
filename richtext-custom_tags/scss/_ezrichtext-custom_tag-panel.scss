@@ -1,0 +1,35 @@
+
+@mixin btn-default {
+  color: #fff;
+  background-color: #5cb85c;
+  border-color: #4cae4c;
+  margin-right: .25rem;
+}
+@mixin btn-primary {
+  color: #fff;
+  background-color: #337ab7;
+  border-color: #2e6da4;
+  margin-right: .25rem;
+}
+
+.ezrichtext-field {
+  .panel {
+    ul.list-group{
+      li.list-group-item {
+        list-style-type: none;
+        margin:0;
+      }
+    }
+  }
+  .panel-body {
+    p > a:first-of-type {
+      @include make-btn;
+      @include btn-default;
+    }
+    p > a {
+      @include make-btn;
+      @include btn-primary;
+
+    }
+  }
+}

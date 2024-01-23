@@ -1,0 +1,26 @@
+ibexa_fieldtype_richtext:
+    custom_tags:
+        vimeo:
+            template: '@standard/ezrichtext/custom_tags/vimeo.html.twig'
+            icon: "/bundles/ibexaicons/img/all-icons.svg#video"
+            attributes:
+                title:
+                    type: string
+                    required: false
+                url:
+                    type: string
+                    required: false
+
+# https://github.com/ezsystems/ezplatform-rawhtml-richtext-tag/tree/master/Resources/config
+ibexa:
+    system:
+        admin_group:
+            fieldtypes:
+                ezrichtext:
+                    custom_tags:
+                        - vimeo
+                    toolbar:
+                        custom_tags_group:
+                            buttons:
+                                vimeo:
+                                    priority: 93

@@ -1,0 +1,4 @@
+<div class="custom_tag-factbox ibexa-factbox ibexa-factbox--{{ params.style|default("light") }}">
+    {% if params.title is defined %}<h3 class="ibexa-factbox--title">{{ params.title }}</h3>{% endif %}
+    {{ content|replace({'&lt;': '<', '&gt;': '>', '&quot;': '"', '&amp;': '&'})|raw }}
+</div>

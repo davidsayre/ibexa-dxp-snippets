@@ -1,0 +1,11 @@
+<div class="custom_tag-accordion accordion" data-comp="accordion">
+    <div class="accordion__item">
+        <button class="accordion__item__button">
+            {{ params.title|default("Expand") }}
+            <span class="icon icon-chevron-down"></span>
+        </button>
+        <div class="accordion__item__description">
+            {{ content|replace({'&lt;': '<', '&gt;': '>', '&quot;': '"', '&amp;': '&'})|raw }}
+        </div>
+    </div>
+</div>

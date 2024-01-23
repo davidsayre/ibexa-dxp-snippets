@@ -1,0 +1,3 @@
+<div class="alert alert-info">
+    {{ content|replace({'&lt;': '<', '&gt;': '>', '&quot;': '"', '&amp;': '&'})|raw }}
+</div>

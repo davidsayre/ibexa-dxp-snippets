@@ -1,0 +1,29 @@
+ibexa_fieldtype_richtext:
+    custom_tags:
+        panel:
+            template: '@standard/ezrichtext/custom_tags/panel.html.twig'
+            icon: "/bundles/ibexaicons/img/all-icons.svg#wand"
+            attributes:
+                title:
+                    type: string
+                    required: false
+                style:
+                    type: string
+                    required: false
+                icon:
+                    type: string
+                    required: false
+
+# https://github.com/ezsystems/ezplatform-rawhtml-richtext-tag/tree/master/Resources/config
+ibexa:
+    system:
+        admin_group:
+            fieldtypes:
+                ezrichtext:
+                    custom_tags:
+                        - panel
+                    toolbar:
+                        custom_tags_group:
+                            buttons:
+                                panel:
+                                    priority: 91

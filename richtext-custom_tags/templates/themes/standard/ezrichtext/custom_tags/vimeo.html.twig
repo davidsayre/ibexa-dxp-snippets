@@ -1,0 +1,17 @@
+<div class="custom_tag-vimeo">
+    <div class="embed-video">
+        {% if params.title is defined and params.title is not empty %}
+            <h3>{{ params.title }}</h3>
+        {% endif %}
+        {% if params.url is defined and params.url is not empty and "https://" in params.url  %}
+            <div class="responsive-iframe">
+                <iframe src="{{ params.url }}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen=""></iframe>
+            </div>
+        {% else %}
+            <!-- invalid vimeo url -->
+        {% endif %}
+        {% if content is defined and content is not empty %}
+            {{ content|replace({'&lt;': '<', '&gt;': '>', '&quot;': '"', '&amp;': '&'})|raw }}
+        {% endif %}
+    </div>
+</div>
