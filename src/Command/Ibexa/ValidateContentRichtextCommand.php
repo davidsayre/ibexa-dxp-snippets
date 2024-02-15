@@ -9,7 +9,7 @@ declare(strict_types=1);
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
-use eZ\Publish\Core\Repository\Values\Content\Content;
+use Ibexa\Core\Repository\Values\Content\Content;
 use Ibexa\Core\Repository\ContentService;
 use Ibexa\Core\Repository\Repository;
 use Ibexa\FieldTypeRichText\FieldType\RichText\Value as RichTextValue;
