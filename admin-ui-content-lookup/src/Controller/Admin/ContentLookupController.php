@@ -30,7 +30,7 @@ class ContentLookupController extends AbstractController {
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function index(Request $request) {
-        return $this->render("@standard/content_lookup/dashboard.html.twig");
+        return $this->render("@standard/admin/content_lookup/dashboard.html.twig");
     }
 
     /**
