@@ -1,0 +1,25 @@
+From 79b372a141233d859110cf1b97fabf3cbc5486ed Mon Sep 17 00:00:00 2001
+From: Bartek Wajda <bartlomiej.wajda@ibexa.co>
+Date: Fri, 25 Aug 2023 12:33:14 +0200
+Subject: [PATCH] IBX-6352: Blocked image upload when moving it inside RTE
+ (#121)
+
+---
+ .../public/js/CKEditor/upload-image/upload-image-editing.js   | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/bundle/Resources/public/js/CKEditor/upload-image/upload-image-editing.js b/src/bundle/Resources/public/js/CKEditor/upload-image/upload-image-editing.js
+index 0431bf87..3729f1a6 100644
+--- a/src/bundle/Resources/public/js/CKEditor/upload-image/upload-image-editing.js
++++ b/src/bundle/Resources/public/js/CKEditor/upload-image/upload-image-editing.js
+@@ -10,6 +10,10 @@ class IbexaUploadImageEditing extends Plugin {
+ 
+     addListeners() {
+         this.listenTo(this.editor.editing.view.document, 'drop', (event, data) => {
++            if (data.dataTransfer.effectAllowed === 'copyMove') {
++                return;
++            }
++
+             const { files } = data.dataTransfer;
+ 
+             if (!files.length) {

@@ -1,0 +1,58 @@
+From 0cf6ac1d471701004f80a3750efd79060c7014d1 Mon Sep 17 00:00:00 2001
+From: Dariusz Szut <dew326@gmail.com>
+Date: Wed, 14 Jun 2023 15:30:33 +0200
+Subject: [PATCH] IBX-5870: Fixed link editing
+
+---
+ .../public/js/CKEditor/link/link-ui.js        | 22 ++++++++++++++-----
+ 1 file changed, 16 insertions(+), 6 deletions(-)
+
+diff --git a/src/bundle/Resources/public/js/CKEditor/link/link-ui.js b/src/bundle/Resources/public/js/CKEditor/link/link-ui.js
+index c5b7ddb..a3d3e11 100644
+--- a/src/bundle/Resources/public/js/CKEditor/link/link-ui.js
++++ b/src/bundle/Resources/public/js/CKEditor/link/link-ui.js
+@@ -17,15 +17,30 @@ class IbexaLinkUI extends Plugin {
+ 
+         this.showForm = this.showForm.bind(this);
+         this.addLink = this.addLink.bind(this);
++        this.getLinkRange = this.getLinkRange.bind(this);
+ 
+         this.isNew = false;
+     }
+ 
++    getLinkRange() {
++        return findAttributeRange(
++            this.editor.model.document.selection.getFirstPosition(),
++            'ibexaLinkHref',
++            this.editor.model.document.selection.getAttribute('ibexaLinkHref'),
++            this.editor.model,
++        );
++    }
++
+     createFormView() {
+         const formView = new IbexaLinkFormView({ locale: this.editor.locale, editor: this.editor });
+ 
+         this.listenTo(formView, 'save-link', () => {
+             const { url, title, target } = this.formView.getValues();
++            const range = this.getLinkRange();
++
++            this.editor.model.change((writer) => {
++                writer.setSelection(range);
++            });
+ 
+             this.isNew = false;
+ 
+@@ -49,12 +64,7 @@ class IbexaLinkUI extends Plugin {
+ 
+     removeLink() {
+         const modelElement = this.editor.model.document.selection.getSelectedElement();
+-        const range = findAttributeRange(
+-            this.editor.model.document.selection.getFirstPosition(),
+-            'ibexaLinkHref',
+-            this.editor.model.document.selection.getAttribute('ibexaLinkHref'),
+-            this.editor.model,
+-        );
++        const range = this.getLinkRange();
+ 
+         if (modelElement) {
+             if (this.editor.model.schema.checkAttribute(modelElement, 'ibexaLinkHref')) {

@@ -1,0 +1,58 @@
+diff --git a/src/bundle/Event/Subscriber/LocationEventSubscriber.php b/src/bundle/Event/Subscriber/LocationEventSubscriber.php
+new file mode 100644
+index 0000000..314b427
+--- /dev/null
++++ b/src/bundle/Event/Subscriber/LocationEventSubscriber.php
+@@ -0,0 +1,39 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++declare(strict_types=1);
++
++namespace Ibexa\Bundle\Elasticsearch\Event\Subscriber;
++
++use Ibexa\Contracts\Core\Repository\Events\Location\BeforeSwapLocationEvent;
++use Ibexa\Core\Search\Common\EventSubscriber\AbstractSearchEventSubscriber;
++use Symfony\Component\EventDispatcher\EventSubscriberInterface;
++
++final class LocationEventSubscriber extends AbstractSearchEventSubscriber implements EventSubscriberInterface
++{
++    public static function getSubscribedEvents(): array
++    {
++        return [
++            BeforeSwapLocationEvent::class => 'onBeforeSwapLocation',
++        ];
++    }
++
++    public function onBeforeSwapLocation(BeforeSwapLocationEvent $event): void
++    {
++        $location1 = $event->getLocation1();
++        $location2 = $event->getLocation2();
++
++        $this->searchHandler->deleteLocation(
++            $location1->id,
++            $location1->contentId
++        );
++
++        $this->searchHandler->deleteLocation(
++            $location2->id,
++            $location2->contentId
++        );
++    }
++}
+diff --git a/src/bundle/Resources/config/services.yaml b/src/bundle/Resources/config/services.yaml
+index 5f17e6f..02cd81e 100644
+--- a/src/bundle/Resources/config/services.yaml
++++ b/src/bundle/Resources/config/services.yaml
+@@ -35,3 +35,8 @@ services:
+         lazy: true
+         tags:
+             - { name: ibexa.search.engine, alias: elasticsearch }
++
++    Ibexa\Bundle\Elasticsearch\Event\Subscriber\LocationEventSubscriber:
++        arguments:
++            $searchHandler: '@ibexa.spi.search'
++            $persistenceHandler: '@ibexa.api.persistence_handler'

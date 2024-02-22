@@ -1,0 +1,52 @@
+From f3d8512ceffaa4156cdca47587e435c5c4977182 Mon Sep 17 00:00:00 2001
+From: pawelpawlik <pawel.pawlik@ibexa.co>
+Date: Wed, 7 Feb 2024 10:16:32 +0100
+Subject: [PATCH 1/2] IBX-7636 add CacheControl header to preview content
+ response in order to prevent caching preview
+
+---
+ src/lib/MVC/Symfony/Controller/Content/PreviewController.php | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/lib/MVC/Symfony/Controller/Content/PreviewController.php b/src/lib/MVC/Symfony/Controller/Content/PreviewController.php
+index ee706a62d3..d0f51ab2a2 100644
+--- a/src/lib/MVC/Symfony/Controller/Content/PreviewController.php
++++ b/src/lib/MVC/Symfony/Controller/Content/PreviewController.php
+@@ -117,6 +117,7 @@ public function previewContentAction(
+                 HttpKernelInterface::SUB_REQUEST,
+                 false
+             );
++            $response->headers->addCacheControlDirective('no-cache', true);
+         } catch (\Exception $e) {
+             if ($location->isDraft() && $this->controllerChecker->usesCustomController($content, $location)) {
+                 // @todo This should probably be an exception that embeds the original one
+
+From ddefc04f51e45ae5b018e7a3c30b1829bbbe71ee Mon Sep 17 00:00:00 2001
+From: pawelpawlik <pawel.pawlik@ibexa.co>
+Date: Wed, 7 Feb 2024 11:12:52 +0100
+Subject: [PATCH 2/2] moved adding header according to review
+
+---
+ src/lib/MVC/Symfony/Controller/Content/PreviewController.php | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/lib/MVC/Symfony/Controller/Content/PreviewController.php b/src/lib/MVC/Symfony/Controller/Content/PreviewController.php
+index d0f51ab2a2..3b6f5160a1 100644
+--- a/src/lib/MVC/Symfony/Controller/Content/PreviewController.php
++++ b/src/lib/MVC/Symfony/Controller/Content/PreviewController.php
+@@ -117,7 +117,6 @@ public function previewContentAction(
+                 HttpKernelInterface::SUB_REQUEST,
+                 false
+             );
+-            $response->headers->addCacheControlDirective('no-cache', true);
+         } catch (\Exception $e) {
+             if ($location->isDraft() && $this->controllerChecker->usesCustomController($content, $location)) {
+                 // @todo This should probably be an exception that embeds the original one
+@@ -131,6 +130,7 @@ public function previewContentAction(
+                 throw $e;
+             }
+         }
++        $response->headers->addCacheControlDirective('no-cache', true);
+         $response->setPrivate();
+ 
+         $this->previewHelper->restoreConfigScope();
