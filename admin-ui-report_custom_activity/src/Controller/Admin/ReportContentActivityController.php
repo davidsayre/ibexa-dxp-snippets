@@ -7,9 +7,12 @@ use App\Form\Admin\Reports\ReportContentActivityType;
 use App\Model\Admin\Reports\ReportContentActivityParams;
 use App\Services\Admin\Reports\ReportContentActivityService;
 use App\Services\Admin\Reports\ReportContentExportService;
+use Cocur\Slugify\Slugify;
 use GuzzleHttp\Stream\Stream;
 use Ibexa\Bundle\IO\BinaryStreamResponse;
 use Ibexa\Contracts\Core\Repository\SearchService;
+use Ibexa\Contracts\Core\Repository\Values\Content\Language;
+use Ibexa\Core\MVC\Symfony\Controller\Content\DownloadController;
 use Ibexa\Core\Pagination\Pagerfanta\LocationSearchAdapter;
 use Pagerfanta\Pagerfanta;
 use Pagerfanta\View\TwitterBootstrap3View;
@@ -24,6 +27,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportContentActivityController extends AbstractController {
 
+
+    const XML_DOWNLOAD_LANGUAGES_PARAM = 'languages'; // see xml download link in twig
     const MAX_RESULTS = 25;
 
     protected ReportContentActivityService $reportContentActivityService;
@@ -58,10 +63,21 @@ class ReportContentActivityController extends AbstractController {
 
         $params = array();
         $params['form'] = $form->createView();
+        $params['xmlDownloadLanguageCsv'] = ""; // default empty
 
         if($form->isSubmitted() && $form->isValid()) {
 
             $formData = $form->getData();
+
+            // extract language filter
+            $languages = Language::ALL;
+            if(array_key_exists(ReportContentActivityType::LANGUAGE_CODE_FIELD,$formData) && !empty($formData[ReportContentActivityType::LANGUAGE_CODE_FIELD])) {
+                $languages = [$formData[ReportContentActivityType::LANGUAGE_CODE_FIELD]]; // example: [eng-US] used by xml exporter
+            }
+
+            // Now pass the languages csv into the template for the 'xml' links
+            $params['xmlDownloadLanguageCsv'] = implode(",",$languages);
+
 
             $searchParams = $this->paramFill($formData);
             $query = $this->reportContentActivityService->buildLocationQuery($searchParams);
@@ -77,7 +93,7 @@ class ReportContentActivityController extends AbstractController {
                 if($buttonName === ReportContentActivityType::BUTTON_DOWNLOAD_XML) {
                     // download XML rows from query
                     $filename = 'content_activity_report_results.xml';
-                    $content = $this->reportContentExportService->generateRestXMLRowsByQuery($query, 1000);
+                    $content = $this->reportContentExportService->generateRestXMLRowsByQuery($query, $languages, 1000);
                     $mimeType = "application/xml";
                     //$response = new StreamedResponse();
                     $response = new Response();
@@ -145,6 +161,10 @@ class ReportContentActivityController extends AbstractController {
         );
     }
 
+    /**
+     * @param Request $request
+     * @return Response
+     */
     public function downloadXmlContent(Request $request) {
 
         $contentId = 0;
@@ -152,11 +172,31 @@ class ReportContentActivityController extends AbstractController {
             $contentId = $request->query->get('contentId');
             $contentId = intval($contentId);
         }
+
+        if($request->query->has(self::XML_DOWNLOAD_LANGUAGES_PARAM)) {
+            $languages = explode(",",$request->query->get(self::XML_DOWNLOAD_LANGUAGES_PARAM));
+        }
+
         if(!empty($contentId) && $contentId > 0) {
             try {
-                $restContent = $this->reportContentExportService->generateRestXMLByContentId($contentId);
+                $restContent = $this->reportContentExportService->generateRestXMLByContentId($contentId, $languages);
                 $xmlContent = $this->reportContentExportService->convertRestContentToRestXml($restContent);
-                $response = new Response($xmlContent,200,['Content-type: application/xml']);
+
+                $languageCsvSlug = implode("_",$languages);
+                $title = $restContent->contentInfo->name;
+                $version = $restContent->contentInfo->currentVersionNo;
+                $slugify = new Slugify();
+                $slugTitle = $slugify->slugify($title);
+                $filename = "content_".$languageCsvSlug."-".$contentId."_".$version."-".$slugTitle.".xml";
+
+                // Create a download response using disposition and file
+                $response = new Response(
+                    $xmlContent,200,
+                    [
+                        'Content-type' => 'application/xml',
+                        'Content-Disposition'=>'attachment; filename="'.$filename.'"'
+                    ]
+                );
                 return $response;
             } catch (\Exception $e) {
                 return new Response("Error with request");

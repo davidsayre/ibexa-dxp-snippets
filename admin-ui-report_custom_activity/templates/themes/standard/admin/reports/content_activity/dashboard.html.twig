@@ -1,5 +1,11 @@
 {% extends '@ibexadesign/ui/layout.html.twig' %}
 
+{#
+    @form - (object) Form
+    @pagerfanta - (object) pagerfanta
+    @xmlDownloadLanguageCsv - (csv string) esl-ES,eng-US for link
+#}
+
 {% block title %}{{ 'Reports > Content Activity'|trans }}{% endblock %}
 
 {%- block breadcrumbs -%}
@@ -157,8 +163,10 @@
                 {% endset %}
 
                 {% set col_xml %}
+                    {# create XML download w/ special aprams for languages (csv) #}
                     <a href="{{ path('admin-ui.reports.content_activity_download_xml', {
-                        'contentId': itemLocation.contentInfo.id
+                        'contentId': itemLocation.contentInfo.id,
+                        'languages': xmlDownloadLanguageCsv
                     }) }}" target="_blank">
                         <svg class="ibexa-icon ibexa-icon--small ibexa-input-text-wrapper__password-show">
                             <use xlink:href="{{ ibexa_icon_path('tag') }}"></use>
