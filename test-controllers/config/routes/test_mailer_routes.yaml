@@ -1,0 +1,9 @@
+TestEmailController:
+    path:   /_test/email/send
+    defaults:  {
+        _controller: App\Controller\Tests\TestMailerController:testEmail,
+        protectToken : '823451242345123',
+        emailTo : 'myname@mycompany.com',
+        emailFrom : 'myname@mycompany.com',
+        body: "testing smtp"
+    }

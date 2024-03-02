@@ -1,0 +1,4 @@
+TestSVGIcons:
+    path: /_test/svg_icons
+    defaults:
+        _controller: App\Controller\Tests\TestSVGIcons::svgIcons

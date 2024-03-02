@@ -1,0 +1,9 @@
+TestNewRelicError:
+    path: /_test/newrelic/error
+    defaults:
+        _controller: App\Controller\Tests\TestNewRelic::testError
+
+TestNewRelicMetric:
+    path: /_test/newrelic/error
+    defaults:
+        _controller: App\Controller\Tests\TestNewRelic::testMetric
