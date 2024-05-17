@@ -17,9 +17,9 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class FindUnusedURLCommand extends Command
+class UnusedURLFindCommand extends Command
 {
-    public const COMMAND_NAME = "app:find-unused-urls";
+    public const COMMAND_NAME = "app:unused-urls:find";
     private $urlService;
     private $userService;
     private $permissionResolver;
