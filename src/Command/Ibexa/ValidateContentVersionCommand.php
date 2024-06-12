@@ -105,7 +105,7 @@ class ValidateContentVersionCommand extends Command {
         if(!empty($contentId) && is_numeric($contentId)) {
             $contentIdRows = array(array('id'=>$contentId));
         } else {
-            $contentIdRows = $this->queryContentListByContentType($offset, $limit);
+            $contentIdRows = $this->queryContentListMissingName($offset, $limit);
         }
 
         $count = 0 + $offset;
@@ -163,11 +163,8 @@ class ValidateContentVersionCommand extends Command {
 
     }
 
-    protected function queryContentListByContentType($offset, $limit){
-        /*
-         * select * from ezcontentobject where id not in (select contentobject_id from ezcontentobject_name)
-         */
-        // get set of contentIDs
+    protected function queryContentListMissingName($offset, $limit){
+        // get set of contentIDs where missing from ezcontentobject_name
         $qb = $this->connection->createQueryBuilder();
         $qb->select('id');
         $qb->from('ezcontentobject');
@@ -178,6 +175,23 @@ class ValidateContentVersionCommand extends Command {
         return $qb->execute()->fetchAllAssociative();
     }
 
+    protected function queryContentNameMissingVersion($offset, $limit){
+        // get set of contentIDs and versions where ezcontentobject_name points to a missing content version
+        /*
+            select econ.contentobject_id, econ.content_version, concat('id_',econ.contentobject_id,'-version_',econ.content_version) as compound_key
+            from ezcontentobject_name econ
+            where concat('id_',econ.contentobject_id,'-version_',econ.content_version) not in
+            ( select concat('id_',ecov.contentobject_id,'-version_',ecov.version) as compound_key from ezcontentobject_version ecov )
+         */
+        $qb = $this->connection->createQueryBuilder();
+        $qb->select("econ.contentobject_id, econ.content_version, concat('id_',econ.contentobject_id,'-version_',econ.content_version) as compound_key");
+        $qb->from('ezcontentobject_name');
+        $qb->where("concat('id_',econ.contentobject_id,'-version_',econ.content_version) not in ( select concat('id_',ecov.contentobject_id,'-version_',ecov.version) as compound_key from ezcontentobject_version ecov )");
+        $qb->setMaxResults($limit);
+        $qb->setFirstResult($offset);
+
+        return $qb->execute()->fetchAllAssociative();
+    }
 
     /**
      * @param $contentId

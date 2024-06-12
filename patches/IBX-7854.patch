@@ -1,0 +1,693 @@
+diff --git a/src/bundle/Resources/translations/ibexa_form_builder_field_config.en.xliff b/src/bundle/Resources/translations/ibexa_form_builder_field_config.en.xliff
+index 099bba4..b2df156 100644
+--- a/src/bundle/Resources/translations/ibexa_form_builder_field_config.en.xliff
++++ b/src/bundle/Resources/translations/ibexa_form_builder_field_config.en.xliff
+@@ -36,6 +36,21 @@
+         <target state="new">Allowed file extensions</target>
+         <note>key: validation.extensions</note>
+       </trans-unit>
++      <trans-unit id="eaba89c07e532457fd12b37c320c9d7368a272d1" resname="validation.is_not_blank_message_action">
++        <source>The message to display cannot be empty.</source>
++        <target state="new">The message to display cannot be empty.</target>
++        <note>key: validation.is_not_blank_message_action</note>
++      </trans-unit>
++      <trans-unit id="dace53eab26a470218051d194aa8becf37558419" resname="validation.is_not_empty_redirect_action">
++        <source>The content item cannot be empty.</source>
++        <target state="new">The content item cannot be empty.</target>
++        <note>key: validation.is_not_empty_redirect_action</note>
++      </trans-unit>
++      <trans-unit id="9ffc2ec3d66625d1d75f930a1be88165c4f449e1" resname="validation.is_not_empty_url_redirect_action">
++        <source>The redirection URL cannot be empty.</source>
++        <target state="new">The redirection URL cannot be empty.</target>
++        <note>key: validation.is_not_empty_url_redirect_action</note>
++      </trans-unit>
+       <trans-unit id="9b033fb98a8e288c0dfe93e430257b03e72d6d34" resname="validation.max_choices">
+         <source>Maximum number of choices</source>
+         <target state="new">Maximum number of choices</target>
+diff --git a/src/bundle/Resources/views/fields/config/form_fields.html.twig b/src/bundle/Resources/views/fields/config/form_fields.html.twig
+index 721e27d..a17dedd 100644
+--- a/src/bundle/Resources/views/fields/config/form_fields.html.twig
++++ b/src/bundle/Resources/views/fields/config/form_fields.html.twig
+@@ -253,6 +253,10 @@
+         'hidden': true,
+         'class': 'ibexa-fb-form-field-config-fieldset__attribute-input ibexa-fb-form-field-config-fieldset__attribute-input--location-id'
+     } }) }}
++
++    <div class="ibexa-form-error">
++        {{ form_errors(form) }}
++    </div>
+ {%- endblock -%}
+ 
+ {% block field_configuration_attribute_location_widget %}
+@@ -282,4 +286,5 @@
+             can_be_empty: false,
+         }) }}
+     </div>
++    {{ form_errors(form) }}
+ {% endblock %}
+diff --git a/src/lib/Form/Type/FieldAttribute/Action/LocationType.php b/src/lib/Form/Type/FieldAttribute/Action/LocationType.php
+index 34551ed..5e2ba13 100644
+--- a/src/lib/Form/Type/FieldAttribute/Action/LocationType.php
++++ b/src/lib/Form/Type/FieldAttribute/Action/LocationType.php
+@@ -18,6 +18,7 @@ use Symfony\Component\Form\AbstractType;
+ use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+ use Symfony\Component\Form\FormInterface;
+ use Symfony\Component\Form\FormView;
++use Symfony\Component\OptionsResolver\OptionsResolver;
+ 
+ class LocationType extends AbstractType
+ {
+@@ -102,6 +103,15 @@ class LocationType extends AbstractType
+ 
+         return null;
+     }
++
++    public function configureOptions(OptionsResolver $resolver): void
++    {
++        $resolver->setDefaults(
++            [
++                'error_bubbling' => false,
++            ],
++        );
++    }
+ }
+ 
+ class_alias(LocationType::class, 'EzSystems\EzPlatformFormBuilder\Form\Type\FieldAttribute\Action\LocationType');
+diff --git a/src/lib/Form/Type/FieldAttribute/AttributeActionType.php b/src/lib/Form/Type/FieldAttribute/AttributeActionType.php
+index 86f68e2..b6e1a07 100644
+--- a/src/lib/Form/Type/FieldAttribute/AttributeActionType.php
++++ b/src/lib/Form/Type/FieldAttribute/AttributeActionType.php
+@@ -10,6 +10,9 @@ namespace Ibexa\FormBuilder\Form\Type\FieldAttribute;
+ 
+ use Ibexa\FormBuilder\Form\Type\FieldAttribute\Action\ActionType;
+ use Ibexa\FormBuilder\Form\Type\FieldAttribute\Action\LocationType;
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotBlankMessageAction;
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotEmptyLocationRedirectAction;
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotEmptyUrlRedirectAction;
+ use JMS\TranslationBundle\Annotation\Desc;
+ use Symfony\Component\Form\CallbackTransformer;
+ use Symfony\Component\Form\Extension\Core\Type\BaseType;
+@@ -17,7 +20,6 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+ use Symfony\Component\Form\Extension\Core\Type\TextType;
+ use Symfony\Component\Form\FormBuilderInterface;
+ use Symfony\Component\OptionsResolver\OptionsResolver;
+-use Symfony\Component\Validator\Constraints\NotBlank;
+ use Symfony\Contracts\Translation\TranslatorInterface;
+ 
+ class AttributeActionType extends BaseType
+@@ -56,22 +58,31 @@ class AttributeActionType extends BaseType
+     public function buildForm(FormBuilderInterface $builder, array $options)
+     {
+         $builder->add('action', ActionType::class);
+-        $builder->add('location_id', LocationType::class);
+-        $builder->add('url', TextType::class, ['label' => $this->translator->trans(
+-            /** @Desc("Redirection URL") */
+-            'form_builder.attribute.action.url.label',
+-            [],
+-            'ibexa_form_builder'
+-        )]);
++        $builder->add('location_id', LocationType::class, [
++            'constraints' => [
++                new IsNotEmptyLocationRedirectAction(),
++            ],
++        ]);
++        $builder->add('url', TextType::class, [
++            'label' => $this->translator->trans(
++                /** @Desc("Redirection URL") */
++                'form_builder.attribute.action.url.label',
++                [],
++                'ibexa_form_builder',
++            ),
++            'constraints' => [
++                new IsNotEmptyUrlRedirectAction(),
++            ],
++        ]);
+         $builder->add('message', TextareaType::class, [
+             'label' => $this->translator->trans(
+                 /** @Desc("Message to display") */
+                 'form_builder.attribute.action.message.label',
+                 [],
+-                'ibexa_form_builder'
++                'ibexa_form_builder',
+             ),
+             'constraints' => [
+-                new NotBlank(),
++                new IsNotBlankMessageAction(),
+             ],
+         ]);
+ 
+diff --git a/src/lib/Form/Validator/Constraints/AbstractActionValidator.php b/src/lib/Form/Validator/Constraints/AbstractActionValidator.php
+new file mode 100644
+index 0000000..7230123
+--- /dev/null
++++ b/src/lib/Form/Validator/Constraints/AbstractActionValidator.php
+@@ -0,0 +1,47 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++declare(strict_types=1);
++
++namespace Ibexa\FormBuilder\Form\Validator\Constraints;
++
++use Ibexa\Contracts\FormBuilder\FieldType\Model;
++use JMS\TranslationBundle\Translation\TranslationContainerInterface;
++use Symfony\Component\Form\FormInterface;
++use Symfony\Component\Validator\ConstraintValidator;
++use Symfony\Component\Validator\Exception\UnexpectedTypeException;
++
++abstract class AbstractActionValidator extends ConstraintValidator implements TranslationContainerInterface
++{
++    protected function getActionIdentifier(): ?string
++    {
++        $context = $this->context;
++        $form = $context->getRoot();
++        if (!$form instanceof FormInterface) {
++            throw new UnexpectedTypeException($form, FormInterface::class);
++        }
++
++        $data = $form->getData();
++        if (!$data instanceof Model\Field) {
++            throw new UnexpectedTypeException($data, Model\Field::class);
++        }
++
++        $actionAttribute = $data->getAttributeValue('action');
++        if (!is_string($actionAttribute)) {
++            return null;
++        }
++
++        $actionAttribute = json_decode($actionAttribute, true);
++
++        /** @var array<string, string> $actionAttribute */
++        return $actionAttribute['action'] ?? null;
++    }
++
++    public static function getTranslationMessages(): array
++    {
++        return [];
++    }
++}
+diff --git a/src/lib/Form/Validator/Constraints/IsNotBlankMessageAction.php b/src/lib/Form/Validator/Constraints/IsNotBlankMessageAction.php
+new file mode 100644
+index 0000000..d31d529
+--- /dev/null
++++ b/src/lib/Form/Validator/Constraints/IsNotBlankMessageAction.php
+@@ -0,0 +1,15 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++declare(strict_types=1);
++
++namespace Ibexa\FormBuilder\Form\Validator\Constraints;
++
++use Symfony\Component\Validator\Constraint;
++
++final class IsNotBlankMessageAction extends Constraint
++{
++}
+diff --git a/src/lib/Form/Validator/Constraints/IsNotBlankMessageActionValidator.php b/src/lib/Form/Validator/Constraints/IsNotBlankMessageActionValidator.php
+new file mode 100644
+index 0000000..2132880
+--- /dev/null
++++ b/src/lib/Form/Validator/Constraints/IsNotBlankMessageActionValidator.php
+@@ -0,0 +1,53 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++declare(strict_types=1);
++
++namespace Ibexa\FormBuilder\Form\Validator\Constraints;
++
++use Ibexa\FormBuilder\Form\Type\FieldValidatorsConfigurationType;
++use JMS\TranslationBundle\Model\Message;
++use JMS\TranslationBundle\Translation\TranslationContainerInterface;
++use Symfony\Component\Validator\Constraint;
++use Symfony\Component\Validator\Constraints\NotBlank;
++use Symfony\Component\Validator\Exception\UnexpectedTypeException;
++
++final class IsNotBlankMessageActionValidator extends AbstractActionValidator implements TranslationContainerInterface
++{
++    private const ACTION_IDENTIFIER = 'message';
++
++    public function validate($value, Constraint $constraint): void
++    {
++        if (!$constraint instanceof IsNotBlankMessageAction) {
++            throw new UnexpectedTypeException($constraint, IsNotBlankMessageAction::class);
++        }
++
++        $action = $this->getActionIdentifier();
++
++        if (
++            $action === self::ACTION_IDENTIFIER
++            && (false === $value || (empty($value) && '0' != $value))
++        ) {
++            $this->context
++                ->buildViolation(FieldValidatorsConfigurationType::LABEL_PREFIX . 'is_not_blank_message_action')
++                ->setParameter('{{ value }}', $this->formatValue($value))
++                ->setTranslationDomain('ibexa_form_builder_field_config')
++                ->setCode(NotBlank::IS_BLANK_ERROR)
++                ->addViolation();
++        }
++    }
++
++    public static function getTranslationMessages(): array
++    {
++        return [
++            Message::create(
++                FieldValidatorsConfigurationType::LABEL_PREFIX . 'is_not_blank_message_action',
++                'ibexa_form_builder_field_config'
++            )
++                ->setDesc('The message to display cannot be empty.'),
++        ];
++    }
++}
+diff --git a/src/lib/Form/Validator/Constraints/IsNotEmptyLocationRedirectAction.php b/src/lib/Form/Validator/Constraints/IsNotEmptyLocationRedirectAction.php
+new file mode 100644
+index 0000000..f35053c
+--- /dev/null
++++ b/src/lib/Form/Validator/Constraints/IsNotEmptyLocationRedirectAction.php
+@@ -0,0 +1,15 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++declare(strict_types=1);
++
++namespace Ibexa\FormBuilder\Form\Validator\Constraints;
++
++use Symfony\Component\Validator\Constraint;
++
++final class IsNotEmptyLocationRedirectAction extends Constraint
++{
++}
+diff --git a/src/lib/Form/Validator/Constraints/IsNotEmptyLocationRedirectActionValidator.php b/src/lib/Form/Validator/Constraints/IsNotEmptyLocationRedirectActionValidator.php
+new file mode 100644
+index 0000000..b62e31f
+--- /dev/null
++++ b/src/lib/Form/Validator/Constraints/IsNotEmptyLocationRedirectActionValidator.php
+@@ -0,0 +1,50 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++declare(strict_types=1);
++
++namespace Ibexa\FormBuilder\Form\Validator\Constraints;
++
++use Ibexa\FormBuilder\Form\Type\FieldValidatorsConfigurationType;
++use JMS\TranslationBundle\Model\Message;
++use JMS\TranslationBundle\Translation\TranslationContainerInterface;
++use Symfony\Component\Validator\Constraint;
++use Symfony\Component\Validator\Constraints\NotBlank;
++use Symfony\Component\Validator\Exception\UnexpectedTypeException;
++
++final class IsNotEmptyLocationRedirectActionValidator extends AbstractActionValidator implements TranslationContainerInterface
++{
++    private const ACTION_IDENTIFIER = 'location_id';
++
++    public function validate($value, Constraint $constraint): void
++    {
++        if (!$constraint instanceof IsNotEmptyLocationRedirectAction) {
++            throw new UnexpectedTypeException($constraint, IsNotEmptyLocationRedirectAction::class);
++        }
++
++        $action = $this->getActionIdentifier();
++
++        if ($action === self::ACTION_IDENTIFIER && !is_numeric($value)) {
++            $this->context
++                ->buildViolation(FieldValidatorsConfigurationType::LABEL_PREFIX . 'is_not_empty_redirect_action')
++                ->setParameter('{{ value }}', $this->formatValue($value))
++                ->setTranslationDomain('ibexa_form_builder_field_config')
++                ->setCode(NotBlank::IS_BLANK_ERROR)
++                ->addViolation();
++        }
++    }
++
++    public static function getTranslationMessages(): array
++    {
++        return [
++            Message::create(
++                FieldValidatorsConfigurationType::LABEL_PREFIX . 'is_not_empty_redirect_action',
++                'ibexa_form_builder_field_config'
++            )
++                ->setDesc('The content item cannot be empty.'),
++        ];
++    }
++}
+diff --git a/src/lib/Form/Validator/Constraints/IsNotEmptyUrlRedirectAction.php b/src/lib/Form/Validator/Constraints/IsNotEmptyUrlRedirectAction.php
+new file mode 100644
+index 0000000..dd9dfb2
+--- /dev/null
++++ b/src/lib/Form/Validator/Constraints/IsNotEmptyUrlRedirectAction.php
+@@ -0,0 +1,15 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++declare(strict_types=1);
++
++namespace Ibexa\FormBuilder\Form\Validator\Constraints;
++
++use Symfony\Component\Validator\Constraint;
++
++final class IsNotEmptyUrlRedirectAction extends Constraint
++{
++}
+diff --git a/src/lib/Form/Validator/Constraints/IsNotEmptyUrlRedirectActionValidator.php b/src/lib/Form/Validator/Constraints/IsNotEmptyUrlRedirectActionValidator.php
+new file mode 100644
+index 0000000..4b158ff
+--- /dev/null
++++ b/src/lib/Form/Validator/Constraints/IsNotEmptyUrlRedirectActionValidator.php
+@@ -0,0 +1,50 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++declare(strict_types=1);
++
++namespace Ibexa\FormBuilder\Form\Validator\Constraints;
++
++use Ibexa\FormBuilder\Form\Type\FieldValidatorsConfigurationType;
++use JMS\TranslationBundle\Model\Message;
++use JMS\TranslationBundle\Translation\TranslationContainerInterface;
++use Symfony\Component\Validator\Constraint;
++use Symfony\Component\Validator\Constraints\NotBlank;
++use Symfony\Component\Validator\Exception\UnexpectedTypeException;
++
++final class IsNotEmptyUrlRedirectActionValidator extends AbstractActionValidator implements TranslationContainerInterface
++{
++    private const ACTION_IDENTIFIER = 'url';
++
++    public function validate($value, Constraint $constraint): void
++    {
++        if (!$constraint instanceof IsNotEmptyUrlRedirectAction) {
++            throw new UnexpectedTypeException($constraint, IsNotEmptyUrlRedirectAction::class);
++        }
++
++        $action = $this->getActionIdentifier();
++
++        if ($action === self::ACTION_IDENTIFIER && empty($value)) {
++            $this->context
++                ->buildViolation(FieldValidatorsConfigurationType::LABEL_PREFIX . 'is_not_empty_url_redirect_action')
++                ->setParameter('{{ value }}', $this->formatValue($value))
++                ->setTranslationDomain('ibexa_form_builder_field_config')
++                ->setCode(NotBlank::IS_BLANK_ERROR)
++                ->addViolation();
++        }
++    }
++
++    public static function getTranslationMessages(): array
++    {
++        return [
++            Message::create(
++                FieldValidatorsConfigurationType::LABEL_PREFIX . 'is_not_empty_url_redirect_action',
++                'ibexa_form_builder_field_config'
++            )
++                ->setDesc('The redirection URL cannot be empty.'),
++        ];
++    }
++}
+diff --git a/tests/lib/Form/Validator/AbstractActionValidatorTest.php b/tests/lib/Form/Validator/AbstractActionValidatorTest.php
+new file mode 100644
+index 0000000..6bfd68a
+--- /dev/null
++++ b/tests/lib/Form/Validator/AbstractActionValidatorTest.php
+@@ -0,0 +1,35 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++namespace Ibexa\FormBuilder\Tests\Form\Validator;
++
++use Ibexa\Contracts\FormBuilder\FieldType\Model\Attribute;
++use Ibexa\Contracts\FormBuilder\FieldType\Model\Field;
++use Symfony\Component\Validator\Test\ConstraintValidatorTestCase;
++
++abstract class AbstractActionValidatorTest extends ConstraintValidatorTestCase
++{
++    /**
++     * @param array<string, mixed> $attributeValue
++     */
++    protected function getSubmitButton(array $attributeValue): Field
++    {
++        $encodedAttributeValue = json_encode($attributeValue);
++
++        return new Field(
++            str_replace('.', '', uniqid('', true)),
++            'button',
++            'Submit',
++            [
++                new Attribute(
++                    'action',
++                    is_string($encodedAttributeValue) ? $encodedAttributeValue : '',
++                ),
++                new Attribute('notification_email'),
++            ],
++        );
++    }
++}
+diff --git a/tests/lib/Form/Validator/IsNotBlankMessageActionValidatorTest.php b/tests/lib/Form/Validator/IsNotBlankMessageActionValidatorTest.php
+new file mode 100644
+index 0000000..c4380d1
+--- /dev/null
++++ b/tests/lib/Form/Validator/IsNotBlankMessageActionValidatorTest.php
+@@ -0,0 +1,85 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++namespace Ibexa\FormBuilder\Tests\Form\Validator;
++
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotBlankMessageAction;
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotBlankMessageActionValidator;
++use Symfony\Component\Form\FormInterface;
++
++final class IsNotBlankMessageActionValidatorTest extends AbstractActionValidatorTest
++{
++    protected function createValidator(): IsNotBlankMessageActionValidator
++    {
++        return new IsNotBlankMessageActionValidator();
++    }
++
++    public function testEmptyOnMessageActionThrowsException(): void
++    {
++        $constraint = new IsNotBlankMessageAction();
++        $form = $this->createMock(FormInterface::class);
++
++        $attributeValue = [
++            'action' => 'message',
++            'location_id' => null,
++            'url' => null,
++            'message' => '',
++        ];
++        $data = $this->getSubmitButton($attributeValue);
++
++        $form->method('getData')->willReturn($data);
++
++        $this->setRoot($form);
++
++        $this->validator->validate('', $constraint);
++
++        self::assertCount(1, $this->context->getViolations());
++    }
++
++    public function testNotEmptyOnMessageActionDoesNotThrowException(): void
++    {
++        $constraint = new IsNotBlankMessageAction();
++        $form = $this->createMock(FormInterface::class);
++
++        $attributeValue = [
++            'action' => 'message',
++            'location_id' => null,
++            'url' => null,
++            'message' => 'Test message',
++        ];
++        $data = $this->getSubmitButton($attributeValue);
++
++        $form->method('getData')->willReturn($data);
++
++        $this->setRoot($form);
++
++        $this->validator->validate('test', $constraint);
++
++        $this->assertNoViolation();
++    }
++
++    public function testEmptyOnDifferentActionDoesNotThrowException(): void
++    {
++        $constraint = new IsNotBlankMessageAction();
++        $form = $this->createMock(FormInterface::class);
++
++        $attributeValue = [
++            'action' => 'url',
++            'location_id' => null,
++            'url' => null,
++            'message' => '',
++        ];
++        $data = $this->getSubmitButton($attributeValue);
++
++        $form->method('getData')->willReturn($data);
++
++        $this->setRoot($form);
++
++        $this->validator->validate('', $constraint);
++
++        $this->assertNoViolation();
++    }
++}
+diff --git a/tests/lib/Form/Validator/IsNotEmptyLocationRedirectActionValidatorTest.php b/tests/lib/Form/Validator/IsNotEmptyLocationRedirectActionValidatorTest.php
+new file mode 100644
+index 0000000..723309a
+--- /dev/null
++++ b/tests/lib/Form/Validator/IsNotEmptyLocationRedirectActionValidatorTest.php
+@@ -0,0 +1,62 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++namespace Ibexa\FormBuilder\Tests\Form\Validator;
++
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotEmptyLocationRedirectAction;
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotEmptyLocationRedirectActionValidator;
++use Symfony\Component\Form\FormInterface;
++
++final class IsNotEmptyLocationRedirectActionValidatorTest extends AbstractActionValidatorTest
++{
++    protected function createValidator(): IsNotEmptyLocationRedirectActionValidator
++    {
++        return new IsNotEmptyLocationRedirectActionValidator();
++    }
++
++    public function testEmptyOnMessageActionThrowsException(): void
++    {
++        $constraint = new IsNotEmptyLocationRedirectAction();
++        $form = $this->createMock(FormInterface::class);
++
++        $attributeValue = [
++            'action' => 'location_id',
++            'location_id' => null,
++            'url' => null,
++            'message' => null,
++        ];
++        $data = $this->getSubmitButton($attributeValue);
++
++        $form->method('getData')->willReturn($data);
++
++        $this->setRoot($form);
++
++        $this->validator->validate(null, $constraint);
++
++        self::assertCount(1, $this->context->getViolations());
++    }
++
++    public function testNotEmptyOnMessageActionDoesNotThrowException(): void
++    {
++        $constraint = new IsNotEmptyLocationRedirectAction();
++        $form = $this->createMock(FormInterface::class);
++        $attributeValue = [
++            'action' => 'location_id',
++            'location_id' => 2,
++            'url' => null,
++            'message' => null,
++        ];
++        $data = $this->getSubmitButton($attributeValue);
++
++        $form->method('getData')->willReturn($data);
++
++        $this->setRoot($form);
++
++        $this->validator->validate(2, $constraint);
++
++        $this->assertNoViolation();
++    }
++}
+diff --git a/tests/lib/Form/Validator/IsNotEmptyUrlRedirectActionValidatorTest.php b/tests/lib/Form/Validator/IsNotEmptyUrlRedirectActionValidatorTest.php
+new file mode 100644
+index 0000000..d87c2b1
+--- /dev/null
++++ b/tests/lib/Form/Validator/IsNotEmptyUrlRedirectActionValidatorTest.php
+@@ -0,0 +1,62 @@
++<?php
++
++/**
++ * @copyright Copyright (C) Ibexa AS. All rights reserved.
++ * @license For full copyright and license information view LICENSE file distributed with this source code.
++ */
++namespace Ibexa\FormBuilder\Tests\Form\Validator;
++
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotEmptyUrlRedirectAction;
++use Ibexa\FormBuilder\Form\Validator\Constraints\IsNotEmptyUrlRedirectActionValidator;
++use Symfony\Component\Form\FormInterface;
++
++final class IsNotEmptyUrlRedirectActionValidatorTest extends AbstractActionValidatorTest
++{
++    protected function createValidator(): IsNotEmptyUrlRedirectActionValidator
++    {
++        return new IsNotEmptyUrlRedirectActionValidator();
++    }
++
++    public function testEmptyOnMessageActionThrowsException(): void
++    {
++        $constraint = new IsNotEmptyUrlRedirectAction();
++        $form = $this->createMock(FormInterface::class);
++        $attributeValue = [
++            'action' => 'url',
++            'location_id' => null,
++            'url' => '',
++            'message' => null,
++        ];
++        $data = $this->getSubmitButton($attributeValue);
++
++        $form->method('getData')->willReturn($data);
++
++        $this->setRoot($form);
++
++        $this->validator->validate(null, $constraint);
++
++        self::assertCount(1, $this->context->getViolations());
++    }
++
++    public function testNotEmptyOnMessageActionDoesNotThrowException(): void
++    {
++        $constraint = new IsNotEmptyUrlRedirectAction();
++        $form = $this->createMock(FormInterface::class);
++
++        $attributeValue = [
++            'action' => 'url',
++            'location_id' => null,
++            'url' => 'https://ibexa.co',
++            'message' => null,
++        ];
++        $data = $this->getSubmitButton($attributeValue);
++
++        $form->method('getData')->willReturn($data);
++
++        $this->setRoot($form);
++
++        $this->validator->validate('https://ibexa.co', $constraint);
++
++        $this->assertNoViolation();
++    }
++}

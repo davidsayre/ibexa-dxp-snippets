@@ -2,6 +2,7 @@
 
 /**
  * Author: David Sayre / Allegiance Group
+ * Modified variation of the Ibexa Command but for a single content object
  */
 
 namespace App\Command\Ibexa;
@@ -26,6 +27,8 @@ class CleanupSingleContentVersionCommand extends Command {
     /** @var \Ibexa\Bundle\Core\ApiLoader\RepositoryConfigurationProvider */
     private $repositoryConfigurationProvider;
 
+    public const COMMAND_NAME = 'app:content:cleanup-single-version';
+
     public function __construct(
         Repository $repository,
         RepositoryConfigurationProvider $repositoryConfigurationProvider,
@@ -34,14 +37,13 @@ class CleanupSingleContentVersionCommand extends Command {
         $this->repository = $repository;
         $this->repositoryConfigurationProvider = $repositoryConfigurationProvider;
 
-        parent::__construct();
+        parent::__construct(self::COMMAND_NAME);
     }
     
     protected function configure()
     {
         $beforeRunningHints = CleanupVersionsCommand::BEFORE_RUNNING_HINTS;
         $this
-            ->setName('app:content:cleanup-single-version')
             ->setDescription('Removes unwanted content versions. Keeps the published version untouched. By default, also keeps the last archived/draft version.')
             ->addOption(
                 'status',

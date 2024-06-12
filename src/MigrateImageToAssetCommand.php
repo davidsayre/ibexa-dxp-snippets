@@ -6,8 +6,6 @@
  *
  * ./bin/console app:migrate_image_to_asset content_page image asset 9372
  *   NOTE: must add '--save 1' to perform database changes (else dry run)
- *
- * see config/monolog_ibexa_commands.yaml
  */
 
 namespace App\Command\Ibexa;

@@ -133,7 +133,7 @@ class DeleteContentMissingLocationCommand extends Command {
         if(!empty($contentId) && is_numeric($contentId)) {
             $contentIdRows = array(array('id'=>$contentId));
         } else {
-            $contentIdRows = $this->queryContentListByContentType($offset, $limit, $contentStatus, $remoteIdPrefix);
+            $contentIdRows = $this->queryContentList($offset, $limit, $contentStatus, $remoteIdPrefix);
         }
 
         $count = 0 + $offset;
@@ -171,7 +171,7 @@ class DeleteContentMissingLocationCommand extends Command {
 
     }
 
-    protected function queryContentListByContentType($offset, $limit, $contentStatus = "", $remoteIdPrefix = ""){
+    protected function queryContentList($offset, $limit, $contentStatus = "", $remoteIdPrefix = ""){
         /*
          * select * from ezcontentobject where id not in (select contentobject_id from ezcontentobject_name)
          */

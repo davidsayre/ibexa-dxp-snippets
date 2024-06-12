@@ -1,0 +1,25 @@
+monolog:
+    channels:
+        - validate_content
+        - migrate_images
+    handlers:
+        validate_content_info:
+            type: stream
+            level: debug
+            path: "%kernel.logs_dir%/validate_content_info.log"
+            channels: [validate_content]
+        validate_content_error:
+            type: stream
+            level: error
+            path: "%kernel.logs_dir%/validate_content_error.log"
+            channels: [validate_content]
+        migrate_images_info:
+            type: stream
+            level: debug
+            path: "%kernel.logs_dir%/migrate_images_info.log"
+            channels: [migrate_images]
+        migrate_images_error:
+            type: stream
+            level: error
+            path: "%kernel.logs_dir%/migrate_images_error.log"
+            channels: [migrate_images]
