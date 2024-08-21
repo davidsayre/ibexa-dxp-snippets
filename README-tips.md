@@ -15,10 +15,24 @@ composer require ibexa/automated-translation
 ```
 
 ``` 
+
+parameters:
+    google_translate_api_key: '%env(GOOGLE_TRANSLATE_API_KEY)%'
+    
 ibexa_automated_translation:
     system:
         default:
             configurations:
                 google:
                     apiKey: "%google_translate_api_key%"
+```
+
+Edit .env
+```
+ GOOGLE_TRANSLATE_API_KEY=
+```
+
+Edit .env.local
+``` 
+GOOGLE_TRANSLATE_API_KEY=************
 ```
