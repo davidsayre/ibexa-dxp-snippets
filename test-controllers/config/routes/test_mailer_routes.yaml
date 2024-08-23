@@ -1,3 +1,6 @@
+# YOU NEED TO EDIT THIS!
+# Don't just copy and paste this example route into your config
+
 TestEmailController:
     path:   /_test/email/send
     defaults:  {

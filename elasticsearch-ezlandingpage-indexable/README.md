@@ -1,5 +1,11 @@
 ### Indexing LandingPage field type
 
+Problem: All that text that in your LandingPage blocks is NOT indexable by default!
+
+GOAL: add an indexer to extract RichText from landing page blocks and put into Elasticsearch. 
+
+Installation:
+
 1. Copy or merge the config/*.yaml into your project
 1. Copy the ./src files into your project's ./src
 1. Edit the Content Type with an ezlandingpage and check the 'Searchable'

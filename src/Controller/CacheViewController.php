@@ -9,6 +9,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\EventListener\AbstractSessionListener;
 
+/**
+ * GOAL: cache a content 'location' view for a specific TTL
+ * INSTALL: Follow the instructions below for location_view.yaml config and pointing to this controller
+ *
+ */
 class CacheViewController extends Controller {
 
     const DEFAULT_TTL = 300;

@@ -6,6 +6,6 @@ see https://doc.ibexa.co/en/latest/update_and_migration/from_4.4/update_from_4.4
 
 ### Migrate richtext namespaces
 
-If you earlier upgraded from v3.3 to v4.x and haven't run the migrate script yet, do it now, run:
+If you upgraded from v3.3 to v4.x and haven't run the migrate script yet, do it now, run:
 
     php bin/console ibexa:migrate:richtext-namespaces

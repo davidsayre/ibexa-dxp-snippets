@@ -1,6 +1,7 @@
-### Migration tips
+### Symfony Migration tips
 
-When running a migration there are 2 parts, the import from the source and the 'migrate'. Import copies the source into src/Migrations/Ibexa/migrations and registered the file with the list of migrations.
+When running a migration there are 2 parts, the import from the source and the 'migrate'. 
+Import copies the source into src/Migrations/Ibexa/migrations and registered the file with the list of migrations.
 
 There is something to know about migrations though, there is a special references file src/Migrations/Ibexa/references in your project.
 

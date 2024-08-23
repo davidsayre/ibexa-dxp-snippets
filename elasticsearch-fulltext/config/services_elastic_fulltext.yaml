@@ -1,3 +1,5 @@
+# If this does not get included automatically, copy and paste into services.yaml directly
+
 services:
     App\Elasticsearch\Query\CriterionVisitor\FullTextVisitorDecorator:
         decorates: Ibexa\Elasticsearch\Query\CriterionVisitor\FullTextVisitor
