@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Helpers;
+namespace App\Helper;
 
 use DateTime;
 
@@ -12,7 +12,7 @@ class PromoMonthlyPickerHelper {
      * @param $date
      * @return mixed|null
      */
-    public function pickMonthlyPromoByDate($promos, $date = null)
+    public static function pickMonthlyPromoByDate($promos, $date = null)
     {
 
         if (!is_a($date, DateTime::class)) {
