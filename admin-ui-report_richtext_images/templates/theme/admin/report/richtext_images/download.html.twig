@@ -1,0 +1,29 @@
+{% extends '@ibexadesign/ui/layout.html.twig' %}
+
+{#
+@pagerFanta - (object)
+#}
+
+{% block title %}{{ 'Reports > RichText Images > Download'|trans }}{% endblock %}
+
+{%- block breadcrumbs -%}
+    {% include '@ibexadesign/ui/breadcrumbs.html.twig' with {
+        items: [
+            { value: 'breadcrumb.admin'|trans(domain='messages')|desc('Admin') },
+            { value: 'Reports > RichText Images > Download'|trans }
+        ]
+    } %}
+{%- endblock -%}
+
+{%- block header -%}
+    {% include '@ibexadesign/ui/page_title.html.twig' with {
+        title: 'RichText Images > Download'|trans,
+    } %}
+{%- endblock -%}
+
+{%- block content -%}
+    <section class="container ibexa-container">
+
+    </section>
+
+{%- endblock -%}

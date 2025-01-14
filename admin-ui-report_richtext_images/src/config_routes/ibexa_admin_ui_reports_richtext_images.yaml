@@ -1,0 +1,11 @@
+admin-ui.reports.richtext_images:
+  path: /reports/richtext_images/
+  defaults:
+    _controller: App\Controller\Admin\ReportContentRichTextImageController::index
+    siteaccess_group_whitelist: [ admin_group ]
+
+admin-ui.reports.richtext_images.download:
+  path: /reports/richtext_images/download
+  defaults:
+    _controller: App\Controller\Admin\ReportContentRichTextImageController::download
+    siteaccess_group_whitelist: [ admin_group ]

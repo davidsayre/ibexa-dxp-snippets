@@ -1,0 +1,16 @@
+parameters:
+
+    # Client specific values
+    admin-ui.reports.content_activity.from_days: 90
+    admin-ui.reports.content_activity.custom_date_field: publish_date
+    admin-ui.reports.content_activity.custom_date_label: Review Date
+    admin-ui.reports.content_activity.custom_text_field: author
+    admin-ui.reports.content_activity.custom_text_label: Author
+    admin-ui.reports.content_activity.parent_tags:
+        # Review Tags
+        - 5798
+        # TBB category
+        - 3689
+        # TBB pathway
+        - 3690
+
