@@ -24,10 +24,7 @@ class RichTextImageReportGenerateCommand extends Command
     /**
      * @throws \Doctrine\DBAL\DBALException
      */
-    public function __construct(
-        ReportContentRichTextImageService $reportContentRichTextImageService,
-
-    )
+    public function __construct( ReportContentRichTextImageService $reportContentRichTextImageService )
     {
         parent::__construct(self::COMMAND_NAME);
         $this->reportContentRichTextImageService = $reportContentRichTextImageService;

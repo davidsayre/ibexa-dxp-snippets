@@ -1,5 +1,6 @@
 <?php
 
+namespace App\Service\Admin\Reports;
 
 use App\Entity\ReportItemRichTextImage;
 use Doctrine\DBAL\Connection;
@@ -72,7 +73,8 @@ class ReportContentRichTextImageService
         $this->output = $output;
     }
 
-    public function setTruncateTable(bool $truncateTable): void {
+    public function setTruncateTable(bool $truncateTable): void
+    {
         $this->truncateTable = $truncateTable;
     }
 
@@ -106,9 +108,9 @@ class ReportContentRichTextImageService
     {
         $countResult = $this->queryCountContentWithRichText();
         $countResultTotal = $countResult->fetchOne();
-        $this->log("Total content with richtext " . $countResultTotal,2) ;
+        $this->log("Total content with richtext " . $countResultTotal, 2);
 
-        $this->log("Report items generating ..",2);
+        $this->log("Report items generating ..", 2);
         $rows = $this->queryContentWithRichText($limit, $offset);
         $results = [];
         foreach ($rows as $row) {
@@ -119,8 +121,9 @@ class ReportContentRichTextImageService
         return $results;
     }
 
-    protected function queryCountContentWithRichText() {
-        $sql = "select count(distinct contentobject_id) as total
+    protected function queryCountContentWithRichText()
+    {
+        $sql = "select count(distinct eco.id) as total
             from ezcontentobject eco, ezcontentobject_attribute ecoa
             where eco.id = ecoa.contentobject_id and eco.current_version = ecoa.version
             and ecoa.data_type_string = 'ezrichtext'";
@@ -135,7 +138,7 @@ class ReportContentRichTextImageService
      */
     protected function queryContentWithRichText($limit = 1, $offset = 0)
     {
-        $sql = "select distinct contentobject_id
+        $sql = "select distinct eco.id as contentobject_id
             from ezcontentobject eco, ezcontentobject_attribute ecoa
             where eco.id = ecoa.contentobject_id and eco.current_version = ecoa.version
             and ecoa.data_type_string = 'ezrichtext' order by eco.id limit :limit offset :offset";
@@ -195,6 +198,7 @@ class ReportContentRichTextImageService
         $elements = $doc->getElementsByTagName('ezembed');
         $this->log(sprintf("found %s embeds", $elements->count()), 4);
         foreach ($elements as $element) {
+
             $linkContentId = $this->extractElementXlinkHrefContentId($element);
             if (!is_numeric($linkContentId) || $linkContentId == 0) {
                 continue; // skip
@@ -263,10 +267,19 @@ class ReportContentRichTextImageService
      */
     protected function extractElementXlinkHrefContentId(\DOMElement $element)
     {
-        $href = $element->getAttribute('xlink:href');
-        if (stripos($href, 'ezcontent') !== false) {
-            return str_replace('ezcontent://', '', $href);
+        if (!method_exists($element, 'getAttribute')) {
+            $this->log("Element missing getAttribute()", 5);
+            return 0;
         }
+        try {
+            $href = $element->getAttribute('xlink:href');
+            if (stripos($href, 'ezcontent') !== false) {
+                return str_replace('ezcontent://', '', $href);
+            }
+        } catch (\Exception $e) {
+            // skip
+        }
+
         return 0;
     }
 
@@ -278,6 +291,10 @@ class ReportContentRichTextImageService
     protected function extractElementAttribute(\DOMElement $element, $attributeName)
     {
         if (empty($attributeName)) {
+            return "";
+        }
+        if (!method_exists($element, 'getAttribute')) {
+            $this->log(sprintf("[error] %s missing getAttribute()", get_class($element)), 5);
             return "";
         }
         return $element->getAttribute($attributeName);
@@ -305,11 +322,20 @@ class ReportContentRichTextImageService
      */
     protected function extractElementEzConfigEzValueSize(\DOMElement $element)
     {
+        if (!method_exists($element, 'getElementsByTagName')) {
+            $this->log(sprintf("[error] %s missing getElementsByTagName()", get_class($element)), 5);
+            return "";
+        }
         $configElements = $element->getElementsByTagName('ezconfig');
         /** @var \DOMElement $configElement */
         foreach ($configElements as $configElement) {
             /** @var \DOMElement $valueElement */
             foreach ($configElement->childNodes as $valueElement) {
+                $text = new \DOMText();
+                if (!method_exists($valueElement, 'getAttribute')) {
+                    $this->log(sprintf("[error] %s missing getAttribute()", get_class($valueElement)), 5);
+                    continue;
+                }
                 if ($valueElement->getAttribute('key') == 'size') {
                     // found size
                     return $valueElement->nodeValue;
@@ -332,10 +358,11 @@ class ReportContentRichTextImageService
         return [];
     }
 
-    public function purgeAllReportItems() {
+    public function purgeAllReportItems()
+    {
         $sql = "truncate report_item_rich_text_image";
-        $this->log(sprintf(" Truncate report items table"),3,false);
-        if($this->save === true) {
+        $this->log(sprintf(" Truncate report items table"), 3, false);
+        if ($this->save === true) {
             $this->connection->executeQuery($sql);
             $this->log(sprintf("[truncate]"));
         } else {
@@ -348,15 +375,15 @@ class ReportContentRichTextImageService
 
     public function storeReportResults($results)
     {
-        $this->log("Parsing report results content > fields > report items ",1);
-        foreach($results as $result) {
+        $this->log("Parsing report results content > fields > report items ", 1);
+        foreach ($results as $result) {
             $contentId = $result['content_id'];
-            if($this->truncateTable == false) {
+            if ($this->truncateTable == false) {
                 //Delete all existing report items for this content (wipe out) and no way to enforce uniqueness
                 $sql = "delete from report_item_rich_text_image where content_id = :content_id";
                 $sql = str_replace(":content_id", $contentId, $sql);
-                $this->log(sprintf(" Delete all report items for content [%s] ", $contentId),3,false);
-                if($this->save === true) {
+                $this->log(sprintf(" Delete all report items for content [%s] ", $contentId), 3, false);
+                if ($this->save === true) {
                     //SKIP deleting individual records in favor of full truncation
                     $this->connection->executeQuery($sql);
                     $this->log(sprintf("[deleted]"));
@@ -364,42 +391,43 @@ class ReportContentRichTextImageService
                     $this->log(sprintf("[dry-run]"));
                 }
             }
-            if(array_key_exists('fields',$result )) {
-                $this->log(sprintf('  Store content [%s] ',$contentId),3, false);
-                foreach($result['fields'] as $field => $reportItems) {
-                    $this->log(sprintf("field [%s] ",$field),3, false);
+            if (array_key_exists('fields', $result)) {
+                $this->log(sprintf('  Store content [%s] ', $contentId), 3, false);
+                foreach ($result['fields'] as $field => $reportItems) {
+                    $this->log(sprintf("field [%s] ", $field), 3, false);
                     $saveCount = 0;
                     foreach ($reportItems as $reportItem) {
                         $saveCount++;
                         if ($reportItem instanceof ReportItemRichTextImage) {
-                            if($this->save === true) {
+                            if ($this->save === true) {
                                 $this->em->persist($reportItem);
-                                $this->log('.',3,false);
-                                if($saveCount % 10 === 0) {
+                                $this->log('.', 3, false);
+                                if ($saveCount % 10 === 0) {
                                     $this->em->flush();
-                                    $this->log("[save]",3,false);
+                                    $this->log("[save]", 3, false);
                                 }
                             } else {
-                                $this->log('d',3,false);
+                                $this->log('d', 3, false);
                             }
                         }
                     }
-                    $this->log("",1); // end batch
-                    if($this->save === true) {
+                    $this->log("", 1); // end batch
+                    if ($this->save === true) {
                         $this->em->flush();
                     }
                 }
             }
         }
-        if($this->save === true) {
-            $this->log(sprintf("Storing [done]"),1);
+        if ($this->save === true) {
+            $this->log(sprintf("Storing [done]"), 1);
         } else {
-            $this->log(sprintf("Storing [dry-run]"),1);
+            $this->log(sprintf("Storing [dry-run]"), 1);
         }
 
     }
 
-    public function queryReportItemsWithContentFields($limit = 100, $offset = 0) {
+    public function queryReportItemsWithContentFields($limit = 100, $offset = 0)
+    {
         $sql = "select 
             ri.id as ri_id,
             eco.name as content_name,            
