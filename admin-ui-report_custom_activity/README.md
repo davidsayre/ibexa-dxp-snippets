@@ -12,6 +12,12 @@ Filter:
 * etc..
 
 
+### Requires: App\Helper\Slugify.php
+And php extension intl
+```
+composer require ext-intl:*
+```
+
 ### How to Create a controller that can export XML in the Ibexa REST API schema
 
 Exporting with the official Ibexa REST API schema is good becuase it means you cna use the IBEXA REST API to re-import.

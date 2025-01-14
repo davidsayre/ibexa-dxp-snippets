@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Model\Admin\Reports\ReportContentActivityParams;
-use App\Services\Admin\Reports\ReportContentActivityService;
-use App\Services\Admin\Reports\ReportContentExportService;
-use Cocur\Slugify\Slugify;
+use App\Service\Admin\Reports\ReportContentActivityService;
+use App\Service\Admin\Reports\ReportContentExportService;
+use App\Helper\Slugify;
 use Ibexa\Contracts\Core\Repository\SearchService;
 use Ibexa\Contracts\Core\Repository\Values\Content\Language;
 use Ibexa\Core\Pagination\Pagerfanta\LocationSearchAdapter;
