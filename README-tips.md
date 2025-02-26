@@ -86,3 +86,52 @@ document.body.addEventListener("ibexa-ckeditor:configure", (e) => {
 
 Sure, np - I remembered there should be a way to do that and got some help from our Support Team
 ```
+
+
+Hi, I am looking for a way to find a location by its URL (with PHP API) but I didn't find any criterion for that in the docs.
+Does anyone know how I can do that ? Thanks
+
+Matthias Schmidt 
+I had asked the support the same question some time ago and also found no clean solution, but the following code is working for us:
+```
+    protected function resetRouter(): null|SiteAccess
+    {
+        $oldSiteAccess = $this->siteAccessRouter->getSiteAccess();
+        $this->siteAccessRouter->setSiteAccess();
+
+        return $oldSiteAccess;
+    }
+
+    protected function restoreRouter(null|SiteAccess $siteAccess): void
+    {
+        $this->siteAccessRouter->setSiteAccess($siteAccess);
+    }
+
+    protected function getLocation(string $url, SiteAccess $siteAccess): Location
+    {
+        $currentSiteAccess = $this->resetRouter();
+
+        try {
+            $this->restoreRouter($siteAccess);
+
+            $request = Request::create($url);
+
+            /**
+             * Use the established mechanism to determine `semanticPathinfo` which is needed for request matching.
+             * @see \Ibexa\Bundle\Core\EventListener\SiteAccessListener::onSiteAccessMatch()
+             */
+            $event = new PostSiteAccessMatchEvent($siteAccess, $request, HttpKernelInterface::MAIN_REQUEST);
+            $this->eventDispatcher->dispatch($event, MVCEvents::SITEACCESS);
+            $requestData = $this->requestMatcher->matchRequest($request);
+        } finally {
+            $this->restoreRouter($currentSiteAccess);
+        }
+
+        if (!isset($requestData['locationId'])) {
+            throw new \LogicException('Request matching did not yield a location id');
+        }
+
+        return $this->locationService->loadLocation($requestData['locationId']);
+    }
+Beforehand, you can use \Ibexa\Core\MVC\Symfony\SiteAccess\Router::match to find the site access based on the URL. (again with having to wrap the code in reset/restoreRouter calls.
+```
