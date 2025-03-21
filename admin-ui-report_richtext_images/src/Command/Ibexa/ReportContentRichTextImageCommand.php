@@ -33,7 +33,7 @@ class ReportContentRichTextImageCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Generate Report RichText Images')
+            ->setDescription('Generate RichText Images Report')
             ->addOption(
                 'content-id',
                 null,
