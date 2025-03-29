@@ -108,25 +108,30 @@ class ReportContentImageToArchiveCommand extends Command
         $this->reportContentImageToArchiveService->setSave($save);
         $this->reportContentImageToArchiveService->loginUserOnProcess($username);
         $this->reportContentImageToArchiveService->setLogLevel($logLevel);
+
+        // truncation option
         if($truncateTable) {
             $this->reportContentImageToArchiveService->setTruncateTable(true);
             $this->reportContentImageToArchiveService->purgeAllReportItems();
+            return Command::SUCCESS;
         }
+
+        // check archive sections
         if(!empty($archiveSections)) {
             $this->reportContentImageToArchiveService->setArchiveSections(explode(",", $archiveSections));
         } else {
             $output->writeln("Error: No --archive-sections specified");
             return Command::FAILURE;
         }
+
+        // proceed with processing
         if(!empty($contentId)) {
             $reportResults = $this->reportContentImageToArchiveService->generateReportItemFromOneContent($contentId);
         } else {
             $reportResults = $this->reportContentImageToArchiveService->generateReportItems($limit, $offset);
         }
 
-        // print_r($contentReportItems);
-
-        // part 2: per content / per field / report items
+        // part 2: store parsed data in database
         $this->reportContentImageToArchiveService->storeReportResults($reportResults);
         return Command::SUCCESS;
 

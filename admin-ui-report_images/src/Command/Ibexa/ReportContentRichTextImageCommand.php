@@ -103,19 +103,22 @@ class ReportContentRichTextImageCommand extends Command
         $this->reportContentRichTextImageService->setSave($save);
         $this->reportContentRichTextImageService->loginUserOnProcess($username);
         $this->reportContentRichTextImageService->setLogLevel($logLevel);
+
+        // truncate-table option
         if($truncateTable) {
             $this->reportContentRichTextImageService->setTruncateTable(true);
             $this->reportContentRichTextImageService->purgeAllReportItems();
+            return Command::SUCCESS;
         }
+
+        // proceed with processing
         if(!empty($contentId)) {
             $results = $this->reportContentRichTextImageService->generateReportItemFromOneContent($contentId);
         } else {
             $results = $this->reportContentRichTextImageService->generateReportItems($limit, $offset);
         }
 
-        // print_r($contentReportItems);
-
-        // part 2: per content / per field / report items
+        // part 2: store parsed results in database
         $this->reportContentRichTextImageService->storeReportResults($results);
         return Command::SUCCESS;
 

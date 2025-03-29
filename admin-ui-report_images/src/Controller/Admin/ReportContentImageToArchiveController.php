@@ -2,13 +2,13 @@
 
 namespace App\Controller\Admin;
 
-use App\Entity\ReportItemImageArchive;
+use App\Entity\Admin\ReportItemImageArchive;
 use App\Service\Admin\Reports\ReportContentImageToArchiveService;
 use Doctrine\ORM\EntityManagerInterface;
+use Pagerfanta\Doctrine\ORM\QueryAdapter;
 use Pagerfanta\Pagerfanta;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
-use Pagerfanta\Doctrine\ORM\QueryAdapter;
 use Symfony\Component\HttpFoundation\Response;
 
 class ReportContentImageToArchiveController extends AbstractController {

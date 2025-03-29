@@ -171,7 +171,7 @@ class ReportContentService
 
     public function purgeAllReportItems(): bool
     {
-        if (!empty($this->tableName)) {
+        if (empty($this->tableName)) {
             $this->log(sprintf(" Missing tablename to truncate"), 1);
             return false;
         }
