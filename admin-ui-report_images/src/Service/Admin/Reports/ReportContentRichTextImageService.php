@@ -2,127 +2,26 @@
 
 namespace App\Service\Admin\Reports;
 
-use App\Entity\ReportItemRichTextImage;
-use Doctrine\DBAL\Connection;
-use Doctrine\ORM\EntityManagerInterface;
-use Ibexa\Contracts\Core\Repository\ContentService;
-use Ibexa\Contracts\Core\Repository\PermissionResolver;
-use Ibexa\Contracts\Core\Repository\UserService;
+use App\Entity\Admin\ReportItemRichTextImage;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
 use Ibexa\Contracts\Core\Repository\Values\Content\Field;
-use Symfony\Component\Console\Output\OutputInterface;
 use Ibexa\FieldTypeRichText\FieldType\RichText\Value as RichTextValue;
 
 /**
  * Generate report items from rich text fields
  * NOTE: This could be expanded to handle all types of embeds, not just images
  */
-class ReportContentRichTextImageService
+class ReportContentRichTextImageService extends ReportContentService
 {
 
-    private EntityManagerInterface $em;
-    private Connection $connection;
-    private ContentService $contentService;
-    private UserService $userService;
-    private PermissionResolver $permissionResolve;
-    private OutputInterface $output;
-
-    private $logLevel = 3; // 1 = process; 2 = sub process; 3 = content/item; 4 = field; 5 = values;
-    private $save = false;
+    protected $tableName = 'report_item_rich_text_image';
 
     /**
-     * Truncate = true will remove all records from report item table and skip the inividual deletion logic
-     * @var bool
+     * Override parent()
+     * @return \Doctrine\DBAL\ForwardCompatibility\DriverResultStatement|\Doctrine\DBAL\ForwardCompatibility\DriverStatement|\Doctrine\DBAL\ForwardCompatibility\Result
+     * @throws \Doctrine\DBAL\Exception
      */
-    private $truncateTable = false;
-
-    private $imageContentTypes = ['image'];
-
-    public function __construct(
-        EntityManagerInterface $em,
-        Connection             $connection,
-        ContentService         $contentService,
-        UserService            $userService,
-        PermissionResolver     $permissionResolver
-    )
-    {
-        $this->em = $em;
-        $this->connection = $connection;
-        $this->contentService = $contentService;
-        $this->userService = $userService;
-        $this->permissionResolver = $permissionResolver;
-    }
-
-    // query report data with search and filter pagination
-    // download report data (all)
-
-    public function setLogLevel(int $logLevel): void
-    {
-        $this->logLevel = $logLevel;
-    }
-
-    public function setSave($save)
-    {
-        if (is_bool($save)) {
-            $this->save = $save;
-        }
-    }
-
-    public function setOutput(OutputInterface $output)
-    {
-        $this->output = $output;
-    }
-
-    public function setTruncateTable(bool $truncateTable): void
-    {
-        $this->truncateTable = $truncateTable;
-    }
-
-    public function setImageContentTypes(array $contentTypes)
-    {
-        $this->imageContentTypes = $contentTypes;
-    }
-
-    public function loginUserOnProcess($username)
-    {
-        // set current user
-        $this->permissionResolver->setCurrentUserReference(
-            $this->userService->loadUserByLogin($username)
-        );
-    }
-
-    public function generateReportItemFromOneContent($contentId)
-    {
-        $this->log("Report items generating from 1 contentId ..");
-        $results = [];
-        if (!is_numeric($contentId)) {
-            $this->log("contentID not number");
-            return [];
-        }
-        $results[] = $this->parseContentToReportItems($contentId);
-        $this->log("Report items [done]");
-        return $results;
-    }
-
-    public function generateReportItems($limit, $offset)
-    {
-        $countResult = $this->queryCountContentWithRichText();
-        $countResultTotal = $countResult->fetchOne();
-        $this->log("Total content with richtext " . $countResultTotal, 2);
-
-        $this->log("Report items generating ..", 2);
-        $rows = $this->queryContentWithRichText($limit, $offset);
-        $results = [];
-        foreach ($rows as $row) {
-            $contentId = $row['contentobject_id'];
-            $results[] = $this->parseContentToReportItems($contentId);
-        }
-        $this->log("Report items [done]", 2);
-        return $results;
-    }
-
-    protected function queryCountContentWithRichText()
-    {
+    protected function queryCountContent() {
         $sql = "select count(distinct eco.id) as total
             from ezcontentobject eco, ezcontentobject_attribute ecoa
             where eco.id = ecoa.contentobject_id and eco.current_version = ecoa.version
@@ -131,23 +30,31 @@ class ReportContentRichTextImageService
     }
 
     /**
+     * Override parent()
      * @param $limit
      * @param $offset
      * @return \Doctrine\DBAL\ForwardCompatibility\DriverResultStatement|\Doctrine\DBAL\ForwardCompatibility\DriverStatement|\Doctrine\DBAL\ForwardCompatibility\Result
      * @throws \Doctrine\DBAL\Exception
      */
-    protected function queryContentWithRichText($limit = 1, $offset = 0)
+    protected function queryContent($limit = 1, $offset = 0)
     {
         $sql = "select distinct eco.id as contentobject_id
             from ezcontentobject eco, ezcontentobject_attribute ecoa
-            where eco.id = ecoa.contentobject_id and eco.current_version = ecoa.version
-            and ecoa.data_type_string = 'ezrichtext' order by eco.id limit :limit offset :offset";
+            where eco.id = ecoa.contentobject_id and eco.current_version = ecoa.version and ecoa.data_type_string = 'ezrichtext' 
+            order by eco.id 
+            limit :limit 
+            offset :offset";
         $sql = str_replace(":limit", $limit, $sql);
         $sql = str_replace(":offset", $offset, $sql);
         return $this->connection->executeQuery($sql);
     }
 
-    protected function parseContentToReportItems($contentId)
+    /**
+     * Override parent()
+     * @param $contentId
+     * @return array
+     */
+    protected function parseContentToReportItems($contentId): array
     {
         $parseContentResults = [];
         $parseContentResults['content_id'] = $contentId;
@@ -180,7 +87,7 @@ class ReportContentRichTextImageService
         return $parseContentResults;
     }
 
-    protected function extractReportItemsFromRichTextField(Field $field, Content $content)
+    private function extractReportItemsFromRichTextField(Field $field, Content $content)
     {
 
         /** @var RichTextValue $fieldValue */
@@ -265,10 +172,10 @@ class ReportContentRichTextImageService
      * @param \DOMElement $element
      * @return array|int|string|string[]
      */
-    protected function extractElementXlinkHrefContentId(\DOMElement $element)
+    private function extractElementXlinkHrefContentId(\DOMElement $element)
     {
-        if (!method_exists($element, 'getAttribute')) {
-            $this->log("Element missing getAttribute()", 5);
+        if(!method_exists($element,'getAttribute')) {
+            $this->log("Element missing getAttribute()",5);
             return 0;
         }
         try {
@@ -276,7 +183,7 @@ class ReportContentRichTextImageService
             if (stripos($href, 'ezcontent') !== false) {
                 return str_replace('ezcontent://', '', $href);
             }
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             // skip
         }
 
@@ -288,13 +195,13 @@ class ReportContentRichTextImageService
      * @param \DOMElement $element
      * @return string
      */
-    protected function extractElementAttribute(\DOMElement $element, $attributeName)
+    private function extractElementAttribute(\DOMElement $element, $attributeName)
     {
         if (empty($attributeName)) {
             return "";
         }
-        if (!method_exists($element, 'getAttribute')) {
-            $this->log(sprintf("[error] %s missing getAttribute()", get_class($element)), 5);
+        if(!method_exists($element,'getAttribute')) {
+            $this->log(sprintf("[error] %s missing getAttribute()",get_class($element)),5);
             return "";
         }
         return $element->getAttribute($attributeName);
@@ -306,7 +213,7 @@ class ReportContentRichTextImageService
      * @param \DOMElement $element
      * @return void
      */
-    protected function checkElementHasInvalidEzLinkPosition(\DOMElement $element)
+    private function checkElementHasInvalidEzLinkPosition(\DOMElement $element)
     {
         /** @var \DOMNode $childNode */
         foreach ($element->childNodes as $childNode) {
@@ -320,10 +227,10 @@ class ReportContentRichTextImageService
      * @param $element
      * @return string
      */
-    protected function extractElementEzConfigEzValueSize(\DOMElement $element)
+    private function extractElementEzConfigEzValueSize(\DOMElement $element)
     {
-        if (!method_exists($element, 'getElementsByTagName')) {
-            $this->log(sprintf("[error] %s missing getElementsByTagName()", get_class($element)), 5);
+        if(!method_exists($element,'getElementsByTagName')) {
+            $this->log(sprintf("[error] %s missing getElementsByTagName()",get_class($element)),5);
             return "";
         }
         $configElements = $element->getElementsByTagName('ezconfig');
@@ -332,8 +239,8 @@ class ReportContentRichTextImageService
             /** @var \DOMElement $valueElement */
             foreach ($configElement->childNodes as $valueElement) {
                 $text = new \DOMText();
-                if (!method_exists($valueElement, 'getAttribute')) {
-                    $this->log(sprintf("[error] %s missing getAttribute()", get_class($valueElement)), 5);
+                if(!method_exists($valueElement,'getAttribute')) {
+                    $this->log(sprintf("[error] %s missing getAttribute()",get_class($valueElement)),5);
                     continue;
                 }
                 if ($valueElement->getAttribute('key') == 'size') {
@@ -345,7 +252,7 @@ class ReportContentRichTextImageService
         return "";
     }
 
-    protected function getImageFieldFileInfo($content)
+    private function getImageFieldFileInfo($content)
     {
         $sourceContentFields = $content->getFields();
         /** @var Field $field */
@@ -358,32 +265,23 @@ class ReportContentRichTextImageService
         return [];
     }
 
-    public function purgeAllReportItems()
+    /**
+     * Override parent()
+     * @param $reportResults
+     * @return void
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function storeReportResults(array $reportResults): void
     {
-        $sql = "truncate report_item_rich_text_image";
-        $this->log(sprintf(" Truncate report items table"), 3, false);
-        if ($this->save === true) {
-            $this->connection->executeQuery($sql);
-            $this->log(sprintf("[truncate]"));
-        } else {
-            $this->log(sprintf("[dry-run]"));
-        }
-        // also mark truncation happened for later operations
-        $this->truncateTable = true;
-    }
-
-
-    public function storeReportResults($results)
-    {
-        $this->log("Parsing report results content > fields > report items ", 1);
-        foreach ($results as $result) {
+        $this->log("Parsing report results content > fields > report items ",1);
+        foreach($reportResults as $result) {
             $contentId = $result['content_id'];
-            if ($this->truncateTable == false) {
+            if($this->truncateTable === false) {
                 //Delete all existing report items for this content (wipe out) and no way to enforce uniqueness
-                $sql = "delete from report_item_rich_text_image where content_id = :content_id";
+                $sql = sprintf("delete from %s where content_id = :content_id", $this->tableName);
                 $sql = str_replace(":content_id", $contentId, $sql);
-                $this->log(sprintf(" Delete all report items for content [%s] ", $contentId), 3, false);
-                if ($this->save === true) {
+                $this->log(sprintf(" Delete all report items for content [%s] ", $contentId),3,false);
+                if($this->save === true) {
                     //SKIP deleting individual records in favor of full truncation
                     $this->connection->executeQuery($sql);
                     $this->log(sprintf("[deleted]"));
@@ -391,43 +289,50 @@ class ReportContentRichTextImageService
                     $this->log(sprintf("[dry-run]"));
                 }
             }
-            if (array_key_exists('fields', $result)) {
-                $this->log(sprintf('  Store content [%s] ', $contentId), 3, false);
-                foreach ($result['fields'] as $field => $reportItems) {
-                    $this->log(sprintf("field [%s] ", $field), 3, false);
+            if(array_key_exists('fields',$result )) {
+                $this->log(sprintf('  Store content [%s] ',$contentId),3, false);
+                foreach($result['fields'] as $field => $reportItems) {
+                    $this->log(sprintf("field [%s] ",$field),3, false);
                     $saveCount = 0;
                     foreach ($reportItems as $reportItem) {
                         $saveCount++;
                         if ($reportItem instanceof ReportItemRichTextImage) {
-                            if ($this->save === true) {
+                            if($this->save === true) {
                                 $this->em->persist($reportItem);
-                                $this->log('.', 3, false);
-                                if ($saveCount % 10 === 0) {
+                                $this->log('.',3,false);
+                                if($saveCount % 10 === 0) {
                                     $this->em->flush();
-                                    $this->log("[save]", 3, false);
+                                    $this->log("[save]",3,false);
                                 }
                             } else {
-                                $this->log('d', 3, false);
+                                $this->log('d',3,false);
                             }
                         }
                     }
-                    $this->log("", 1); // end batch
-                    if ($this->save === true) {
+                    $this->log("",1); // end batch
+                    if($this->save === true) {
                         $this->em->flush();
                     }
                 }
             }
         }
-        if ($this->save === true) {
-            $this->log(sprintf("Storing [done]"), 1);
+        if($this->save === true) {
+            $this->log(sprintf("Storing [done]"),1);
         } else {
-            $this->log(sprintf("Storing [dry-run]"), 1);
+            $this->log(sprintf("Storing [dry-run]"),1);
         }
 
     }
 
-    public function queryReportItemsWithContentFields($limit = 100, $offset = 0)
-    {
+    /**
+     * Call from Admin UI Controller
+     * @param $limit
+     * @param $offset
+     * @return array|\mixed[][]
+     * @throws \Doctrine\DBAL\Driver\Exception
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function queryReportItemsWithContentFields($limit = 100, $offset = 0) {
         $sql = "select 
             ri.id as ri_id,
             eco.name as content_name,            
@@ -449,28 +354,6 @@ class ReportContentRichTextImageService
             order by eco.id desc
             ";
         return $this->connection->executeQuery($sql)->fetchAllAssociative();
-    }
-
-    /**
-     * @param string $message
-     * @param bool $newLine
-     */
-    protected function log($message = '', $logLevel = 3, $newLine = true)
-    {
-        if ($this->logLevel >= $logLevel) {
-            if (is_object($this->output)) {
-                if ($newLine) {
-                    $this->output->writeln($message);
-                } else {
-                    $this->output->write($message);
-                }
-            } else {
-                echo $message;
-                if ($newLine) {
-                    echo "\n";
-                }
-            }
-        }
     }
 
 }

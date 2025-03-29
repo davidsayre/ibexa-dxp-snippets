@@ -4,6 +4,7 @@
  * Author: David Sayre / Allegiance Group
  */
 
+namespace App\Command\Ibexa;
 
 use App\Service\Admin\Reports\ReportContentRichTextImageService;
 use Symfony\Component\Console\Command\Command;
@@ -19,14 +20,11 @@ class ReportContentRichTextImageCommand extends Command
     protected InputInterface $input;
     protected OutputInterface $output;
 
-    public const COMMAND_NAME = 'app:richtext-image-report:generate';
+    protected static $defaultName = 'app:richtext-image-report:generate';
 
-    /**
-     * @throws \Doctrine\DBAL\DBALException
-     */
-    public function __construct( ReportContentRichTextImageService $reportContentRichTextImageService )
+    public function __construct( ReportContentRichTextImageService $reportContentRichTextImageService  )
     {
-        parent::__construct(self::COMMAND_NAME);
+        parent::__construct();
         $this->reportContentRichTextImageService = $reportContentRichTextImageService;
     }
 

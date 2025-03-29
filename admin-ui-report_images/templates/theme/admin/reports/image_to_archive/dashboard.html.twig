@@ -1,0 +1,118 @@
+{% extends '@ibexadesign/ui/layout.html.twig' %}
+
+{#
+@pagerFanta - (object)
+#}
+
+{% block title %}{{ 'Reports > Images to Archive'|trans }}{% endblock %}
+
+{%- block breadcrumbs -%}
+    {% include '@ibexadesign/ui/breadcrumbs.html.twig' with {
+        items: [
+            { value: 'breadcrumb.admin'|trans(domain='messages')|desc('Admin') },
+            { value: 'Reports > Images to Archive'|trans }
+        ]
+    } %}
+{%- endblock -%}
+
+{%- block header -%}
+    {% include '@ibexadesign/ui/page_title.html.twig' with {
+        title: 'Images to Archive'|trans,
+    } %}
+{%- endblock -%}
+
+{%- block content -%}
+    <style>
+        .sm-6 {max-width:50%;}
+        .sm-4 {max-width:33%;}
+        .sm-3 {max-width:25%;}
+        .sm-2 {max-width:16%;}
+        .row .submit {margin-top:1rem;}
+        .sm-3 .ibexa-dropdown {min-width:unset;}
+    </style>
+
+    {% if errors is defined and errors is not empty %}
+        <section class="container ibexa-container">
+            {% for error in errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    <a href="{{ path('admin-ui.reports.image_to_archive.download') }}" target="_blank">Download CSV</a>
+
+    <section class="container ibexa-container">
+{#        <p>#}
+{#            Language(s): <a href="?">All</a> | <a href="?language=eng-US">eng-US</a> |<a href="?language=esl-ES">esl-ES</a>#}
+{#        </p>#}
+        {% if pagerfanta is defined  %}
+
+            {% if reportItemsGroupByStatus is defined %}
+                <table class="ibexa-table table ibexa-table">
+                    <tr>
+                        <th>Status</th>
+                        <th>Total</th>
+                    </tr>
+                {% for statusRow in reportItemsGroupByStatus %}
+                    <tr>
+                        <td>{{ statusRow.status }}</td>
+                        <td>{{ statusRow.total }}</td>
+                    </tr>
+                {% endfor %}
+                </table>
+                <br/>
+            {% endif %}
+
+            {% set body_rows = [] %} {#  holder for rows/columns #}
+            {% for item in pagerfanta.currentPageResults %}
+                {# to get actual fields requires lookup, paginator doesn't provide the content object at all #}
+                {% set itemContent = item.contentId|contentid_to_content %}
+                {% set col_view %}
+                    <a href="{{ path('ibexa.content.view', {
+                        'contentId': item.contentId
+                    }) }}" target="_blank">
+                        <svg class="ibexa-icon ibexa-icon--small ibexa-input-text-wrapper__password-show">
+                            <use xlink:href="{{ ibexa_icon_path('view') }}"></use>
+                        </svg>
+                    </a>
+                {% endset %}
+                {% set body_rows = body_rows|merge([{
+                    cols: [
+                        { content: itemContent.name },
+                        { content: itemContent.contentInfo.contentType.name },
+                        { content: itemContent.contentInfo.publishedDate|date('Y-m-d H:i:s') },
+                        { content: itemContent.contentInfo.modificationDate|date('Y-m-d H:i:s') },
+                        { content: item.status },
+                        { content: col_view, raw: true },
+                    ],
+                }]) %}
+            {% endfor %}
+
+            {% include '@ibexadesign/ui/component/table/table.html.twig' with {
+                headline: 'Content List',
+                head_cols: [
+                    { content: 'Content name'|trans },
+                    { content: 'Content Type'|trans },
+                    { content: 'Published'|trans },
+                    { content: 'Modified'|trans },
+                    { content: 'Status'|trans },
+                    { content: 'View' },
+                ],
+                class: 'ibexa-table',
+                body_rows
+            } %}
+
+            {% if pagerfanta.haveToPaginate %}
+                {% include '@ibexadesign/ui/pagination.html.twig' with {
+                    'pager': pagerfanta
+                } %}
+            {% endif %}
+
+        {% else %}
+            <div class="no-results">
+                <p>No results</p>
+            </div>
+        {% endif %}
+    </section>
+
+{%- endblock -%}

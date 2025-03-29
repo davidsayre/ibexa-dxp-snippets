@@ -1,5 +1,6 @@
 <?php
 
+namespace App\Controller\Admin;
 
 use App\Entity\ReportItemRichTextImage;
 use App\Service\Admin\Reports\ReportContentRichTextImageService;

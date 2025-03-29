@@ -1,0 +1,11 @@
+admin-ui.reports.image_to_archive:
+  path: /reports/image_to_archive/
+  defaults:
+    _controller: App\Controller\Admin\ReportContentImageToArchiveController::index
+    siteaccess_group_whitelist: [ admin_group ]
+
+admin-ui.reports.image_to_archive.download:
+  path: /reports/image_to_archive/download
+  defaults:
+    _controller: App\Controller\Admin\ReportContentImageToArchiveController::download
+    siteaccess_group_whitelist: [ admin_group ]
