@@ -179,8 +179,6 @@ class ValidateContentTreeCommand extends Command {
         $qb->setFirstResult($offset);
         $qb->orderBy('contentobject_id');
 
-        echo $qb->getSQL()."\n";
-
         return $qb->execute()->fetchAllAssociative();
     }
 
