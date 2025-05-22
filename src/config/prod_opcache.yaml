@@ -1,0 +1,4 @@
+# see https://symfony.com/doc/current/performance.html#performance-service-container-single-file
+when@prod:
+  parameters:
+    .container.dumper.inline_factories: true
