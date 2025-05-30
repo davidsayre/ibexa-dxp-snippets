@@ -135,3 +135,15 @@ I had asked the support the same question some time ago and also found no clean 
     }
 Beforehand, you can use \Ibexa\Core\MVC\Symfony\SiteAccess\Router::match to find the site access based on the URL. (again with having to wrap the code in reset/restoreRouter calls.
 ```
+
+
+### Disable Activity log for custom CLI Commands:
+```
+2025-05-12 10am
+Assuming that you are handling the import via a custom command / service.
+I think you can inject Ibexa\Contracts\ActivityLog\ActivityLogServiceInterface
+to your service and execute $this->activityLogService->disable()
+to stop the activity log. Run $this->activityLogService->enable()
+to restart activity log.
+- Thorsten Reiter 
+``` 
