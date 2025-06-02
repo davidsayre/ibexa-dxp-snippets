@@ -49,7 +49,7 @@ class CheckRichtextXMLCommand extends Command
         $fileName = $input->getOption('file');
 
         $xmlData = $this->readXmlFile($fileName);
-        if(!empty($xmlData)) {
+        if (!empty($xmlData)) {
             $this->validateRichTextField($xmlData);
         } else {
             $output->writeln("No XML file data");
@@ -59,13 +59,14 @@ class CheckRichtextXMLCommand extends Command
 
     }
 
-    protected function readXMLFile($fileName) {
+    protected function readXMLFile($fileName)
+    {
         $xmlData = "";
-        if(file_exists($fileName)) {
-            $this->output->writeln("Reading ".$fileName);
+        if (file_exists($fileName)) {
+            $this->output->writeln("Reading " . $fileName);
             $xmlData = file_get_contents($fileName);
         } else {
-            $this->output->writeln("File not found ".$fileName);
+            $this->output->writeln("File not found " . $fileName);
         }
         return $xmlData;
     }
@@ -73,14 +74,14 @@ class CheckRichtextXMLCommand extends Command
     protected function validateRichTextField($xml)
     {
         try {
-            print_r($xml);
-            $this->output->writeln("Testing XML with length ".strlen($xml)." characters");
+            $this->output->writeln(sprintf("<info> %s</info>",$xml));
+            $this->output->writeln("Testing XML with length " . strlen($xml) . " characters");
             $test = new RichTextValue($xml);
-            print_r($test->xml->saveXML());
+            $this->output->writeln(sprintf("<comment>%s</comment>",$test->xml->saveXML()));
             //print_r($test);
         } catch (\Exception $e) {
             $errorMessage = $e->getMessage();
-            $this->output->writeln("ERROR " . $errorMessage);
+            $this->output->writeln(sprintf("<error>%s</error>",$errorMessage));
         }
     }
 
