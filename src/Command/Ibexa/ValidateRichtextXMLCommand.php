@@ -7,7 +7,6 @@
 namespace App\Command\Ibexa;
 
 use Ibexa\FieldTypeRichText\FieldType\RichText\Value as RichTextValue;
-use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,16 +16,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Check each content object's RichText and ImageAsset Fields for invalid relations
  *
- * example: bin/console app:check-richtext --file=mydata.xml
+ * example: bin/console app:validate-richtext --file=mydata.xml
  */
-class CheckRichtextXMLCommand extends Command
+class ValidateRichtextXMLCommand extends Command
 {
 
     protected InputInterface $input;
     protected OutputInterface $output;
 
 
-    public const COMMAND_NAME = 'app:check-richtext';
+    public const COMMAND_NAME = 'app:validate-richtext';
 
     protected function configure(): void
     {
@@ -77,7 +76,7 @@ class CheckRichtextXMLCommand extends Command
             $this->output->writeln(sprintf("<info> %s</info>",$xml));
             $this->output->writeln("Testing XML with length " . strlen($xml) . " characters");
             $test = new RichTextValue($xml);
-            $this->output->writeln(sprintf("<comment>%s</comment>",$test->xml->saveXML()));
+            $this->output->writeln(sprintf("VALID: <comment>%s</comment>",$test->xml->saveXML()));
             //print_r($test);
         } catch (\Exception $e) {
             $errorMessage = $e->getMessage();
