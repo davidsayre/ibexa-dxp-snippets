@@ -1,0 +1,1 @@
+vendor/bin/phpcs -n -p . --standard=PHPCompatibility --runtime-set testVersion 8.2
