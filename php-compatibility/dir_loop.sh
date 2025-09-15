@@ -3,6 +3,5 @@ for dir in /var/www/*/; do
     echo "Processing directory: $dir"
     filename="${dir//\//_}"
     vendor/bin/phpcs -n -p ${dir} --standard=PHPCompatibility --runtime-set testVersion 8.2 > "phpcs${filename}.log"
-    # Add your commands to execute within each directory here
   fi
 done
