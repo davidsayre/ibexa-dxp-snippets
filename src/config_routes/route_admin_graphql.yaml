@@ -1,0 +1,14 @@
+# https://doc.ibexa.co/en/latest/infrastructure_and_maintenance/security/security_checklist/#dont-use-hide-for-read-access-restriction
+# config/packages/app_security_graphql.yaml
+#security:
+#  access_control:
+#    - { path: ^/graphql, roles: ROLE_USER}
+
+# The problem with security approach is the bot then knows about /login and will now hit the form processor which has very resource intensive requests
+
+# Better option is to create a route restriction to just admins
+# config/routes/app_route_admin_graphql.yaml
+admin-ui.graphql.restrict:
+  path: /graphql/
+  defaults:
+    siteaccess_group_whitelist: '%admin_group_name%'
