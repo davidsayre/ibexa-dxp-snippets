@@ -20,7 +20,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class DeleteContentMissingLocationCommand extends Command {
+class DeleteContentMissingLocationCommand extends Command
+{
 
     protected Connection $connection;
     protected Repository $repository;
@@ -40,11 +41,11 @@ class DeleteContentMissingLocationCommand extends Command {
      * @throws \Doctrine\DBAL\DBALException
      */
     public function __construct(
-        Connection $connection,
-        Repository $repository,
-        ContentService $contentService,
-        LoggerInterface $validateContentLogger,
-        UserService $userService,
+        Connection         $connection,
+        Repository         $repository,
+        ContentService     $contentService,
+        LoggerInterface    $validateContentLogger,
+        UserService        $userService,
         PermissionResolver $permissionResolver
     )
     {
@@ -60,7 +61,6 @@ class DeleteContentMissingLocationCommand extends Command {
     protected function configure(): void
     {
         $this
-
             ->setDescription('Validate Content Tree')
             ->addOption(
                 'content_id',
@@ -88,9 +88,8 @@ class DeleteContentMissingLocationCommand extends Command {
                 'Query limit',
                 10
             )
-            ->addOption('remote-id-prefix',null,InputOption::VALUE_OPTIONAL,'Remote ID prefix')
-            ->addOption('delete-confirm',null,InputOption::VALUE_OPTIONAL,'CONFIRM DELETION (CAREFUL) requires remote-id-prefix')
-        ;
+            ->addOption('remote-id-prefix', null, InputOption::VALUE_OPTIONAL, 'Remote ID prefix')
+            ->addOption('delete-confirm', null, InputOption::VALUE_OPTIONAL, 'CONFIRM DELETION (CAREFUL) requires remote-id-prefix');
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
@@ -123,55 +122,56 @@ class DeleteContentMissingLocationCommand extends Command {
 
         $this->save = boolval($deleteConfirm);
 
-        if($this->save === true) {
+        if ($this->save === true) {
             $this->runAsUser('admin');
         }
 
         $this->output->writeln('Running ..');
         $this->output->writeln('');
 
-        if(!empty($contentId) && is_numeric($contentId)) {
-            $contentIdRows = array(array('id'=>$contentId));
+        if (!empty($contentId) && is_numeric($contentId)) {
+            $contentIdRows = array(array('id' => $contentId));
         } else {
-            $contentIdRows = $this->queryContentList($offset, $limit, $contentStatus, $remoteIdPrefix);
+            $contentIdRows = $this->queryContentListByContentType($offset, $limit, $contentStatus, $remoteIdPrefix);
         }
 
         $count = 0 + $offset;
 
-        foreach($contentIdRows as $row) {
+        foreach ($contentIdRows as $row) {
             $count++;
             $content = $this->getContentById($row['id']);
-            $logPrefix = "contentID: [".$content->id."] '".$content->getName()."' (".$content->getContentType()->identifier.") [status ".$content->versionInfo->status."] [".$content->contentInfo->remoteId."] ";
-            $output->writeln( $logPrefix." no location");
-            if(!empty($remoteIdPrefix) && $deleteConfirm === "1") {
-                $this->deleteContent($content, $logPrefix);
-            }
+            $logPrefix = "contentID: [" . $content->id . "] '" . $content->getName() . "' (" . $content->getContentType()->identifier . ") [status " . $content->versionInfo->status . "] [" . $content->contentInfo->remoteId . "] ";
+            $output->writeln($logPrefix . " no location");
+            $this->deleteContent($content, $logPrefix);
         }
 
         // Summary:
-        echo "Query: count: ".$count." offset: ".$offset. " limit: ".$limit."\n";
+        echo "Query: count: " . $count . " offset: " . $offset . " limit: " . $limit . "\n";
 
         return Command::SUCCESS;
 
     }
 
-    public function runAsUser($sUserLogin) {
+    public function runAsUser($sUserLogin)
+    {
         $user = $this->userService->loadUserByLogin($sUserLogin);
         $this->permissionResolver->setCurrentUserReference($user);
     }
 
-    public function deleteContent(Content $content,$logPrefix) {
-        if($this->save === true) {
+    public function deleteContent(Content $content, $logPrefix)
+    {
+        if ($this->save === true) {
             $this->contentService->deleteContent($content->contentInfo);
-            $this->output->writeLn($logPrefix."[Deleted]"); // linebreak
+            $this->output->writeLn($logPrefix . "[Deleted]"); // linebreak
             $this->totalDeleted++;
         } else {
-            $this->output->writeln($logPrefix."Dry Run");
+            $this->output->writeln($logPrefix . "Dry Run");
         }
 
     }
 
-    protected function queryContentList($offset, $limit, $contentStatus = "", $remoteIdPrefix = ""){
+    protected function queryContentListByContentType($offset, $limit, $contentStatus = "", $remoteIdPrefix = "")
+    {
         /*
          * select * from ezcontentobject where id not in (select contentobject_id from ezcontentobject_name)
          */
@@ -180,18 +180,18 @@ class DeleteContentMissingLocationCommand extends Command {
         $qb->select('id');
         $qb->from('ezcontentobject');
         $qb->where('1 = 1');
-        if(!empty($contentStatus)){
+        if (!empty($contentStatus)) {
             $qb->andWhere('status = :status');
-            $qb->setParameter('status',$contentStatus);
+            $qb->setParameter('status', $contentStatus);
         }
-        if(!empty($remoteIdPrefix)){
-            $qb->andWhere('remote_id like  "'.$remoteIdPrefix."%".'"'); // like as var
+        if (!empty($remoteIdPrefix)) {
+            $qb->andWhere('remote_id like  "' . $remoteIdPrefix . "%" . '"'); // like as var
         }
         $qb->andWhere('id not in (select contentobject_id from ezcontentobject_tree)');
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
 
-        echo $qb->getSQL()."\n";
+        echo $qb->getSQL() . "\n";
         echo print_r($qb->getParameters());
 
         return $qb->execute()->fetchAllAssociative();
@@ -202,7 +202,8 @@ class DeleteContentMissingLocationCommand extends Command {
      * @param $contentId
      * @return Content
      */
-    protected function getContentById($contentId) {
+    protected function getContentById($contentId)
+    {
         return $this->repository->sudo(
             function () use ($contentId) {
                 return $this->contentService->loadContent($contentId);
