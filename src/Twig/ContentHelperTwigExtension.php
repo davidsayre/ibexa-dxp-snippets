@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+namespace App\Twig;
 
 use Ibexa\Contracts\Core\Repository\ContentService;
 use Twig\Extension\AbstractExtension;
