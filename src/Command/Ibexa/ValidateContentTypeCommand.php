@@ -7,6 +7,8 @@
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DBALException;
+use Exception;
 use Ibexa\Core\Repository\ContentTypeService;
 use Ibexa\Core\Repository\Repository;
 use Ibexa\Core\Repository\Values\ContentType\ContentType;
@@ -49,8 +51,13 @@ class ValidateContentTypeCommand extends Command
 
     public const COMMAND_NAME = 'app:validate-content-type';
 
+    private $ibexaVersion = 5;
+    private $contentTypeTable = 'ibexa_content_type';
+    private $contentTypeNameTable = 'ibexa_content_type_name';
+    private $contentTypeIdField = 'content_type_id';
+
     /**
-     * @throws \Doctrine\DBAL\DBALException
+     * @throws DBALException
      */
     public function __construct(
         Connection         $connection,
@@ -64,6 +71,15 @@ class ValidateContentTypeCommand extends Command
         $this->repository = $repository;
         $this->contentTypeService = $contentTypeService;
         $this->logger = $validateContentLogger;
+    }
+
+    protected function ibexaVersionTableSwitcher()
+    {
+        if ($this->ibexaVersion === 4) {
+            $this->contentTypeTable = 'ezcontentclass';
+            $this->contentTypeNameTable = 'ezcontentclass_name';
+            $this->contentTypeIdField = 'contentclass_id';
+        }
     }
 
     protected function configure(): void
@@ -87,9 +103,10 @@ class ValidateContentTypeCommand extends Command
                 'limit',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Query limit',
-                10
-            );
+                'Query limit (default 9999 to match all)',
+                9999
+            )
+            ->addOption('ibexa-version', null, InputOption::VALUE_OPTIONAL, 'IBEXA version', 5);
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
@@ -113,6 +130,10 @@ class ValidateContentTypeCommand extends Command
     {
         $this->input = $input;
         $this->output = $output;
+
+        // hackery for now, hope to read from kernel instead
+        $this->ibexaVersion = $this->input->getOption('ibexa-version');
+        $this->ibexaVersionTableSwitcher();
 
         $contentTypeId = $input->getOption('contenttype-id');
         $offset = intval($input->getOption('offset'));
@@ -159,7 +180,7 @@ class ValidateContentTypeCommand extends Command
                 // lookup reportItem to edit
                 if (!array_key_exists($contentType->identifier, $this->reportItems)) {
                     // not found?
-                    $this->output->writeln("Missing report item match");
+                    $this->output->writeln(sprintf("Missing [%s] report item match", $contentType->identifier));
                     continue;
                 }
                 $lookupReportItem = $this->reportItems[$contentType->identifier];
@@ -178,32 +199,34 @@ class ValidateContentTypeCommand extends Command
         return $contentTypeChoices;
     }
 
-    protected function getContentTypeById($contentId)
+    protected function getContentTypeById(int $contentTypeId)
     {
         return $this->repository->sudo(
-            function () use ($contentId) {
-                return $this->contentTypeService->loadContentType($contentId);
+            function () use ($contentTypeId) {
+                return $this->contentTypeService->loadContentType($contentTypeId);
             }
         );
     }
 
     protected function validateContentTypeRecord(ContentTypeReportItem $reportItem)
     {
-        if ($reportItem->serializedDescriptionList !== self::EMPTY_SERIALIZED_VALUE) {
+        if (strlen($reportItem->serializedDescriptionList) > 0 && $reportItem->serializedDescriptionList !== self::EMPTY_SERIALIZED_VALUE) {
             $trySerializedDescriptionList = @unserialize($reportItem->serializedDescriptionList);
             if (empty($trySerializedDescriptionList)) {
-                $reportItem->addError("Serialized description list is invalid!");
+                $reportItem->addError("Serialized description list is invalid! [%s]", $reportItem->serializedDescriptionList);
             }
         }
 
-        if ($reportItem->serializedNameList !== self::EMPTY_SERIALIZED_VALUE) {
+        if (strlen($reportItem->serializedNameList) > 0 && $reportItem->serializedNameList !== self::EMPTY_SERIALIZED_VALUE) {
             $trySerializedNameList = @unserialize($reportItem->serializedNameList);
             if (empty($trySerializedNameList)) {
                 $reportItem->addError("Serialized name list is invalid!");
             }
         }
 
-        // TODO: check for duplicate entries a:2:{s:6:"eng-US";s:11:"FAQ Article";s:16:"always-available";s:6:"eng-US";} has a duplicate
+        // TODO: check for duplicate entries
+        // duplicate values example: a:2:{s:6:"eng-US";s:11:"FAQ Article";s:16:"always-available";s:6:"eng-US";}
+
         // NOTE: unserialize() already de-dups
     }
 
@@ -213,6 +236,7 @@ class ValidateContentTypeCommand extends Command
         if (empty($contentNameRecord)) {
             $reportItem->addError("Content type's name is missing!");
         }
+
         // TODO: get serializedName and get languages defined
         // TODO: compare serializedName (eng-US,eng-GB) to content name rows (eng-US,eng-GB)
         // TODO: check name's languageLocale (if multiple) vs contentType's languages
@@ -224,9 +248,11 @@ class ValidateContentTypeCommand extends Command
         try {
             /** @var ContentType $contentType */
             $contentType = $this->getContentTypeById($reportItem->id);
+
             // TODO: check fields on object
-        } catch (\Exception $e) {
-            $this->logger->error("Unable to initialize content type " . $reportItem->identifier);
+
+        } catch (Exception $e) {
+            $this->logger->error(sprintf("Unable to initialize content type [%s]", $reportItem->identifier));
             $this->logger->error($e->getMessage());
         }
 
@@ -234,12 +260,12 @@ class ValidateContentTypeCommand extends Command
         // TODO: check multi-language names
     }
 
-    protected function queryContentTypeRows($offset, $limit, $contentTypeId)
+    protected function queryContentTypeRows(?int $offset, ?int $limit, ?int $contentTypeId)
     {
         // get set of contentIDs
         $qb = $this->connection->createQueryBuilder();
         $qb->select('*');
-        $qb->from('ezcontentclass');
+        $qb->from($this->contentTypeTable);
         if (!empty($contentTypeId)) {
             $qb->where('id = :contentTypeId');
             $qb->setParameter('contentTypeId', $contentTypeId);
@@ -255,8 +281,8 @@ class ValidateContentTypeCommand extends Command
         // get set of contentIDs
         $qb = $this->connection->createQueryBuilder();
         $qb->select('*');
-        $qb->from('ezcontentclass_name');
-        $qb->where('contentclass_id = :contentTypeId');
+        $qb->from($this->contentTypeNameTable);
+        $qb->where(sprintf('%s = :contentTypeId', $this->contentTypeIdField));
         $qb->setParameter('contentTypeId', $contentTypeId);
         return $qb->execute()->fetchAllAssociative();
     }

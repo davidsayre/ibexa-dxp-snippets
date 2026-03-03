@@ -1,0 +1,3 @@
+truncate ezsearch_object_word_link;
+truncate ezsearch_search_phrase;
+truncate ezsearch_word;

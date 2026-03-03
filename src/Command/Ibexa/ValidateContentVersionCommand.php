@@ -17,7 +17,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ValidateContentVersionCommand extends Command {
+class ValidateContentVersionCommand extends Command
+{
 
     protected Connection $connection;
     protected $contentService;
@@ -29,13 +30,16 @@ class ValidateContentVersionCommand extends Command {
 
     public const COMMAND_NAME = 'app:validate-content:versions';
 
-    /**
-     * @throws \Doctrine\DBAL\DBALException
-     */
+    private $ibexaVersion = 5;
+    private $contentTable = 'ibexa_content';
+    private $contentNameTable = 'ibexa_content_name';
+    private $contentVersionTable = 'ibexa_content_version';
+    private $contentVersionVersionField = 'content_version';
+
     public function __construct(
-        Connection $connection,
-        Repository $repository,
-        ContentService $contentService,
+        Connection      $connection,
+        Repository      $repository,
+        ContentService  $contentService,
         LoggerInterface $validateContentLogger
     )
     {
@@ -49,7 +53,6 @@ class ValidateContentVersionCommand extends Command {
     protected function configure(): void
     {
         $this
-            
             ->setDescription('Validate Content Versions')
             ->addOption(
                 'content_id',
@@ -71,7 +74,17 @@ class ValidateContentVersionCommand extends Command {
                 'Query limit',
                 10
             )
-        ;
+            ->addOption('ibexa-version', null, InputOption::VALUE_OPTIONAL, 'IBEXA version', 5);
+    }
+
+    protected function ibexaVersionTableSwitcher()
+    {
+        if ($this->ibexaVersion === 4) {
+            $this->contentTable = 'ezcontentobject';
+            $this->contentNameTable = 'ezcontentobject_name';
+            $this->contentVersionTable = 'ezcontentobject_version';
+            $this->contentVersionVersionField = 'version';
+        }
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
@@ -95,6 +108,10 @@ class ValidateContentVersionCommand extends Command {
         $this->input = $input;
         $this->output = $output;
 
+        // hackery for now, hope to read from kernel instead
+        $this->ibexaVersion = $this->input->getOption('ibexa-version');
+        $this->ibexaVersionTableSwitcher();
+
         $contentId = $input->getOption('content_id');
         $offset = intval($input->getOption('offset'));
         $limit = intval($input->getOption('limit'));
@@ -102,47 +119,71 @@ class ValidateContentVersionCommand extends Command {
         $output->writeln('Running ..');
         $output->writeln('');
 
-        // part 1: check for content missing names
-        if(!empty($contentId) && is_numeric($contentId)) {
-            $contentIdRows = array(array('id'=>$contentId));
-        } else {
-            $contentIdRows = $this->queryContentListMissingName($offset, $limit);
-        }
 
+        // part 1: check for content missing names
+        if (!empty($contentId) && is_numeric($contentId)) {
+            $contentMissingNameRows = array(array('id' => $contentId));
+        } else {
+            $contentMissingNameRows = $this->queryContentListMissingName($offset, $limit);
+        }
         $count = 0 + $offset;
-        foreach($contentIdRows as $row) {
+        foreach ($contentMissingNameRows as $row) {
             $count++;
             $content = $this->getContentById($row['id']);
-            $this->logger->error("contentID: [".$content->id."] ".$content->getName()." missing ezcontentobject_name record");
-            $sql = "/* SQL */".$this->generateSQLFixContentName($content);
+            $this->logger->error("contentID: [" . $content->id . "] " . $content->getName() . " missing name record");
+            $sql = "/* SQL */" . $this->generateSQLFixContentName($content);
             $output->writeln($sql);
             $this->logger->info($sql);
         }
+        $output->writeln(sprintf("Query [%s] rows missing name, processed: %s, Offset %s, limit %s", count($contentMissingNameRows), $count, $offset, $limit));
 
-        // part 2: check for invalid content names
-        if(!empty($contentId) && is_numeric($contentId)) {
-            $contentRows = array(array('id'=>$contentId));
+
+        // part 2: check for content missing exact version matches
+        if (!empty($contentId) && is_numeric($contentId)) {
+            $contentNameMissingVersionRows = array(array('id' => $contentId));
         } else {
-            $contentRows = $this->queryContentNameMissingVersion($offset, $limit);
+            $contentNameMissingVersionRows = $this->queryContentNameMissingVersion($offset, $limit);
         }
-
         $count = 0 + $offset;
-        foreach($contentRows as $row) {
+        foreach ($contentNameMissingVersionRows as $row) {
             $count++;
-            $this->logger->error("contentID: [".$row['id']."] version [".$row['version']."] name is missing ezcontentobject_version match");
-            $sql = "/* SQL */ ".$this->generateSQLDeleteInvalidContentName($row['id'],$row['version'] );
+            $this->logger->error("contentID: [" . $row['id'] . "] version [" . $row['version'] . "] name is missing version match");
+            $sql = "/* SQL */ " . $this->generateSQLDeleteInvalidContentName($row['id'], $row['version']);
             $output->writeln($sql);
-            $this->logger->info($this->generateSQLDeleteInvalidContentName($row['id'],$row['version'] ));
+            $this->logger->info($this->generateSQLDeleteInvalidContentName($row['id'], $row['version']));
         }
-
         // Summary:
-        echo "Query: count: ".$count." offset: ".$offset. " limit: ".$limit."\n";
+        $output->writeln(sprintf("Query [%s] rows invalid versions, processed: %s, Offset %s, limit %s", count($contentNameMissingVersionRows), $count, $offset, $limit));
+
+
+        // Part 3: check for content with NO version
+        if (!empty($contentId) && is_numeric($contentId)) {
+            $contentMissingAnyVersionRows = array(array('id' => $contentId));
+        } else {
+            $contentMissingAnyVersionRows = $this->queryContentMissingAnyVersion($offset, $limit);
+        }
+        $count = 0 + $offset;
+        foreach ($contentMissingAnyVersionRows as $row) {
+            $count++;
+            $this->logger->error("contentID: [" . $row['id'] . "] version [" . $row['version'] . "] is missing any version");
+            // TODO insert
+            $output->writeln($sql);
+        }
+        // Summary:
+        $output->writeln(sprintf("Query [%s] rows invalid versions, processed: %s, Offset %s, limit %s", count($contentMissingAnyVersionRows), $count, $offset, $limit));
+
+        // TODO: Part 3: check for names missing content (reverse)
+
+        // TODO: Part 4: check for versions missing content (reverse)
+
+
         $output->writeln(">> Check the .log file for SQL");
         return Command::SUCCESS;
 
     }
 
-    protected function generateSQLFixContentName(Content $content) {
+    protected function generateSQLFixContentName(Content $content)
+    {
         /*
          * insert into ezcontentobject_name(
             content_translation
@@ -161,70 +202,86 @@ class ValidateContentVersionCommand extends Command {
             ,'eng-US')
          */
 
-        $sql = "
- insert into ezcontentobject_name(content_translation, content_version, contentobject_id, language_id, `name`, real_translation)
- values(':languageKey', :version, :contentId, :languageId, ':contentName', ':realTranslation');";
+        $sql = sprintf("
+ insert into %s (content_translation, content_version, contentobject_id, language_id, `name`, real_translation)
+ values(':languageKey', :version, :contentId, :languageId, ':contentName', ':realTranslation');", $this->contentNameTable);
 
         $languageKey = $content->versionInfo->initialLanguageCode;
         $version = $content->versionInfo->versionNo;
         $contentId = $content->id;
         $languageId = $content->versionInfo->getInitialLanguage()->id;
-        $contentName = empty($content->getName()) ? "new content" :  $content->getName();
+        $contentName = empty($content->getName()) ? "new content" : $content->getName();
         $realTranslation = $content->versionInfo->initialLanguageCode;
 
-        $sql = str_replace(':languageKey',$languageKey, $sql);
-        $sql = str_replace(':version',$version, $sql);
-        $sql = str_replace(':contentId',$contentId, $sql);
-        $sql = str_replace(':languageId',$languageId, $sql);
-        $sql = str_replace(':contentName',$contentName, $sql);
-        $sql = str_replace(':realTranslation',$realTranslation, $sql);
+        $sql = str_replace(':languageKey', $languageKey, $sql);
+        $sql = str_replace(':version', $version, $sql);
+        $sql = str_replace(':contentId', $contentId, $sql);
+        $sql = str_replace(':languageId', $languageId, $sql);
+        $sql = str_replace(':contentName', $contentName, $sql);
+        $sql = str_replace(':realTranslation', $realTranslation, $sql);
         return $sql;
 
     }
 
     /**
-     * Generate SQL for ezcontentobject_name table where the version is not valid and shold be removed
+     * Generate SQL for content name table where the version is not valid and should be removed
      * @param $contentId
      * @param $version
      * @return array|string|string[]
      */
-    protected function generateSQLDeleteInvalidContentName($contentId, $version) {
+    protected function generateSQLDeleteInvalidContentName($contentId, $version)
+    {
 
-        if(empty($contentId) || empty($version)) {
+        if (empty($contentId) || empty($version)) {
             return false;
         }
-        $sql = "delete from ezcontentobject_name where contentobject_id = :id and version = :version";
-        $sql = str_replace(':id',$contentId, $sql);
-        $sql = str_replace(':version',$version, $sql);
+        $sql = sprintf("delete from %s where contentobject_id = :id and %s = :version;", $this->contentNameTable, $this->contentVersionVersionField);
+        $sql = str_replace(':id', $contentId, $sql);
+        $sql = str_replace(':version', $version, $sql);
         return $sql;
     }
 
-    protected function queryContentListMissingName($offset, $limit){
-        // get set of contentIDs where missing from ezcontentobject_name
+    protected function queryContentListMissingName($offset, $limit)
+    {
+        // get set of contentIDs where missing from name table
         $qb = $this->connection->createQueryBuilder();
         $qb->select('id');
-        $qb->from('ezcontentobject');
-        $qb->where('id not in (select contentobject_id from ezcontentobject_name)');
+        $qb->from($this->contentTable);
+        $qb->where(sprintf('id not in (select contentobject_id from %s)', $this->contentNameTable));
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
+
+        $this->output->writeln($qb->getSQL());
 
         return $qb->execute()->fetchAllAssociative();
     }
 
-    protected function queryContentNameMissingVersion($offset, $limit){
+    protected function queryContentNameMissingVersion($offset, $limit)
+    {
         // get set of contentIDs and versions where ezcontentobject_name points to a missing content version
-        /*
-            select econ.contentobject_id, econ.content_version, concat('id_',econ.contentobject_id,'-version_',econ.content_version) as compound_key
-            from ezcontentobject_name econ
-            where concat('id_',econ.contentobject_id,'-version_',econ.content_version) not in
-            ( select concat('id_',ecov.contentobject_id,'-version_',ecov.version) as compound_key from ezcontentobject_version ecov )
-         */
         $qb = $this->connection->createQueryBuilder();
-        $qb->select("econ.contentobject_id as id, econ.content_version as version, concat('id_',econ.contentobject_id,'-version_',econ.content_version) as compound_key");
-        $qb->from('ezcontentobject_name','econ');
-        $qb->where("concat('id_',econ.contentobject_id,'-version_',econ.content_version) not in ( select concat('id_',ecov.contentobject_id,'-version_',ecov.version) as compound_key from ezcontentobject_version ecov )");
+        $qb->select("n.contentobject_id as id, n.content_version as version, concat('id_',n.contentobject_id,'-version_',n.content_version) as compound_key");
+        $qb->from($this->contentNameTable, 'n');
+        $qb->where(sprintf("concat('id_',n.contentobject_id,'-version_',n.content_version) not in ( select concat('id_',v.contentobject_id,'-version_',v.version) as compound_key from %s v )", $this->contentVersionTable));
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
+
+        $this->output->writeln($qb->getSQL());
+
+        return $qb->execute()->fetchAllAssociative();
+    }
+
+    protected function queryContentMissingAnyVersion($offset, $limit) {
+        // get content missing version records entirely
+
+        $qb = $this->connection->createQueryBuilder();
+        $qb->select("c.id");
+        $qb->from($this->contentTable, 'c');
+        $qb->where(sprintf("c.id not in (select contentobject_id from %s) ", $this->contentVersionTable));
+        $qb->setMaxResults($limit);
+        $qb->setFirstResult($offset);
+
+        $this->output->writeln($qb->getSQL());
 
         return $qb->execute()->fetchAllAssociative();
     }
@@ -233,7 +290,8 @@ class ValidateContentVersionCommand extends Command {
      * @param $contentId
      * @return Content
      */
-    protected function getContentById($contentId) {
+    protected function getContentById($contentId)
+    {
         return $this->repository->sudo(
             function () use ($contentId) {
                 return $this->contentService->loadContent($contentId);

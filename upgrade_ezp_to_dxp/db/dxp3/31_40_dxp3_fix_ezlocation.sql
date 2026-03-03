@@ -1,21 +1,3 @@
-/* run these after importing DXP database */
-update ezimagefile set filepath = replace(filepath,"var/ezdemo_site/storage/","var/site/storage/") where filepath like "var/ezdemo_site/storage/%";
-update ezcontentobject_attribute set data_text = replace(data_text,"var/ezdemo_site/storage/","var/site/storage/") where data_text like "%var/ezdemo_site/storage/%";
-
-update ezcontentobject_attribute set data_text = replace(data_text,'url="/trashed/','url="var/site/storage/trashed/')
-where data_text like '%url="/trashed/%';
-
-update ezcontentobject_attribute set data_text = replace(data_text,'dirpath="/trashed"','dirpath="var/site/storage/trashed"')
-where data_text like '%dirpath="/trashed"%';
-
-update ezcontentobject_attribute
-set data_text = replace(
-        replace(data_text,'url="','url="var/site/storage/images/')
-        ,'dirpath=""'
-        ,'dirpath="var/site/storage/images/"'
-    )
-where data_text like '%dirpath=""%' and data_text not like '%url=""%';
-
 /* This is the migration find/replace Ibexa provides for 'ibexa:migrate:richtext-namespaces' */
 -- # RichText namespaces map to migrate
 --     ibexa.field_type.rich_text.namespaces_migration_map:
@@ -55,3 +37,21 @@ set value = replace(value
     )
 where value like '%href="eznode:%';
 
+
+/* fix missing main_node_id */
+create table tmp_fix_location_main (node_id int not null, main_node_id int not null, primary key (node_id) );
+
+insert into tmp_fix_location_main (node_id, main_node_id)
+select node_id, main_node_id from ezcontentobject_tree where main_node_id not in (select node_id from ezcontentobject_tree t);
+
+update ezcontentobject_tree set main_node_id = node_id where node_id in (select node_id from tmp_fix_location_main);
+
+/*
+dxp5 variation (for reference)
+create table tmp_fix_location_main (node_id int not null, main_node_id int not null, primary key (node_id) );
+
+insert into tmp_fix_location_main (node_id, main_node_id)
+select node_id, main_node_id from ibexa_content_tree where main_node_id not in (select node_id from ibexa_content_tree t);
+
+update ibexa_content_tree set main_node_id = node_id where node_id in (select node_id from tmp_fix_location_main);
+*/

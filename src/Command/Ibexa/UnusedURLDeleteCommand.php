@@ -22,7 +22,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * example: bin/console app:unused-urls:delete --save=1 --limit=10000 | grep "DELETE" > var/delete_urls.sql
  */
-class UnusedURLDeleteCommand extends Command {
+class UnusedURLDeleteCommand extends Command
+{
 
     public const COMMAND_NAME = "app:unused-urls:delete";
     private $urlService;
@@ -36,13 +37,14 @@ class UnusedURLDeleteCommand extends Command {
     protected OutputInterface $output;
 
     public function __construct(
-        URLService $urlService,
-        UserService $userService,
+        URLService         $urlService,
+        UserService        $userService,
         PermissionResolver $permissionResolver,
-        LoggerInterface $validateContentLogger,
-        Connection $connection,
-        Repository $repository
-    ) {
+        LoggerInterface    $validateContentLogger,
+        Connection         $connection,
+        Repository         $repository
+    )
+    {
         $this->urlService = $urlService;
         $this->userService = $userService;
         $this->permissionResolver = $permissionResolver;
@@ -76,26 +78,27 @@ class UnusedURLDeleteCommand extends Command {
             $output->write($message);
             if ($this->urlService->findUsages($r)->totalCount === 0) {
                 $output->writeln(" [0 use]");
-                if(boolval($input->getOption('save'))) {
+                if (boolval($input->getOption('save'))) {
 
                     // Delete url
                     $qb = $this->connection->createQueryBuilder();
-                    $qb->delete('ezcontentobject_link','ecl');
+                    $qb->delete('ezcontentobject_link', 'ecl');
                     $qb->from('ecl');
-                    $qb->where("id = ".$r->id);
+                    $qb->where("id = " . $r->id);
 
                     // for now, render as SQL to be copied into text and run on DB connection after backup
-                    echo $qb->getSQL()."\n";
+                    echo $qb->getSQL() . "\n";
 
                     // log deletion
                     // $this->logger->info("Deleting unused Url ".$message);
                 }
             } else {
-               $output->writeln(" [IN USE]");
+                $output->writeln(" [IN USE]");
             }
         }
 
         return Command::SUCCESS;
     }
 }
+
 ?>

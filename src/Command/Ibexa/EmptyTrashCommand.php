@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace App\Command\Ibexa;
 
+use Exception;
 use Ibexa\Contracts\Core\Repository\Values\Content\Query as ContentQuery;
 use Ibexa\Contracts\Core\Repository\Values\Content\Query\Criterion;
 use Ibexa\Contracts\Core\Repository\Values\Content\Trash\SearchResult;
@@ -21,11 +22,13 @@ class EmptyTrashCommand extends Command
 {
     private $repository;
     public const COMMAND_NAME = 'app:empty-trash';
+
     public function __construct(Repository $repository)
     {
         $this->repository = $repository;
         parent::__construct(self::COMMAND_NAME);
     }
+
     protected function configure(): void
     {
         $this
@@ -33,11 +36,11 @@ class EmptyTrashCommand extends Command
             ->addOption('limit', '--limit', InputOption::VALUE_OPTIONAL, 'number of items to process: default 10', 10)
             ->addOption('content_type', '--content_type', InputOption::VALUE_OPTIONAL, 'Content type identifier')
             ->addOption('save', '--save', InputOption::VALUE_OPTIONAL, '--save 1 will make real DB and File changes; else dry run logging', 0);
-        ;
     }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $limit = (int) $input->getOption('limit');
+        $limit = (int)$input->getOption('limit');
         // save / dry run
         $save = false;
         if ($input->getOption('save') == "1" | $input->getOption('save') == true) {
@@ -64,14 +67,14 @@ class EmptyTrashCommand extends Command
         foreach ($trashItems->items as $item) {
             $totalProcessed++;
             $content = $item->getContent();
-            $output->write( "content [".$content->id."] ".$content->getName()." "); // no line break, space
-            if(!empty($contentTypeIdentifier)) {
-                if($content->getContentType()->identifier !== $contentTypeIdentifier) {
-                    $output->writeln("SKIP: [".$content->getContentType()->identifier."]");
+            $output->write("content [" . $content->id . "] " . $content->getName() . " "); // no line break, space
+            if (!empty($contentTypeIdentifier)) {
+                if ($content->getContentType()->identifier !== $contentTypeIdentifier) {
+                    $output->writeln("SKIP: [" . $content->getContentType()->identifier . "]");
                     continue;
                 }
             }
-            if($save === true) {
+            if ($save === true) {
                 try {
                     $this->repository->sudo(
                         function () use ($item) {
@@ -80,20 +83,20 @@ class EmptyTrashCommand extends Command
                     );
                     $totalDeleted++;
                     $output->writeln("[removed]"); // line break
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $output->writeln("ERROR .. "); // line break
-                    echo "File: ".$e->getFile()."\n";
-                    echo "Line: ".$e->getLine()."\n";
-                    echo "Message: ".$e->getMessage()."\n";
+                    echo "File: " . $e->getFile() . "\n";
+                    echo "Line: " . $e->getLine() . "\n";
+                    echo "Message: " . $e->getMessage() . "\n";
                 }
             } else {
                 $totalDryRun++;
                 $output->writeln("[Dry Run]"); //line break
             }
         }
-        $output->writeln("Total processed: ".$totalProcessed);
-        $output->writeln("Total deleted: ".$totalDeleted);
-        $output->writeln("Total dry run: ".$totalDryRun);
+        $output->writeln("Total processed: " . $totalProcessed);
+        $output->writeln("Total deleted: " . $totalDeleted);
+        $output->writeln("Total dry run: " . $totalDryRun);
 
         return Command::SUCCESS;
 

@@ -7,6 +7,8 @@
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DBALException;
+use Exception;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
 use Ibexa\Core\Repository\ContentService;
 use Ibexa\Core\Repository\Repository;
@@ -19,7 +21,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ValidateContentRelationsCommand extends Command {
+class ValidateContentRelationsCommand extends Command
+{
 
     const STATUS_VALID = "valid";
     const STATUS_INVALID = "invalid";
@@ -38,13 +41,19 @@ class ValidateContentRelationsCommand extends Command {
 
     public const COMMAND_NAME = 'app:validate-content:relations';
 
+    private $ibexaVersion = 5;
+    private $contentTable = 'ibexa_content';
+    private $contentTypeTable = 'ibexa_content_type';
+    private $contentTypeNameTable = 'ibexa_content_type_name';
+    private $contentTypeIdField = 'content_type_id';
+
     /**
-     * @throws \Doctrine\DBAL\DBALException
+     * @throws DBALException
      */
     public function __construct(
-        Connection $connection,
-        Repository $repository,
-        ContentService $contentService,
+        Connection      $connection,
+        Repository      $repository,
+        ContentService  $contentService,
         LoggerInterface $validateContentLogger
     )
     {
@@ -55,10 +64,19 @@ class ValidateContentRelationsCommand extends Command {
         $this->logger = $validateContentLogger;
     }
 
+    protected function ibexaVersionTableSwitcher()
+    {
+        if ($this->ibexaVersion === 4) {
+            $this->contentTable = 'ezcontentobject';
+            $this->contentTypeTable = 'ezcontentclass';
+            $this->contentTypeNameTable = 'ezcontentclass_name';
+            $this->contentTypeIdField = 'contentclass_id';
+        }
+    }
+
     protected function configure(): void
     {
         $this
-            
             ->setDescription('Validate Richtext')
             ->addOption(
                 'content-id',
@@ -86,8 +104,7 @@ class ValidateContentRelationsCommand extends Command {
                 InputOption::VALUE_REQUIRED,
                 'Query limit'
             )
-
-        ;
+            ->addOption('ibexa-version', null, InputOption::VALUE_OPTIONAL, 'IBEXA version', 5);
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
@@ -115,6 +132,10 @@ class ValidateContentRelationsCommand extends Command {
         $this->input = $input;
         $this->output = $output;
 
+        // hackery for now, hope to read from kernel instead
+        $this->ibexaVersion = $this->input->getOption('ibexa-version');
+        $this->ibexaVersionTableSwitcher();
+
         $contentId = $input->getOption('content-id');
         $contentClassId = $input->getOption('contentclass-id');
         $offset = intval($input->getOption('offset'));
@@ -123,18 +144,18 @@ class ValidateContentRelationsCommand extends Command {
         $output->writeln('Running ..');
         $output->writeln('');
 
-        if(!empty($contentId) && is_numeric($contentId)) {
-            $contentIdRows = array(array('id'=>$contentId));
+        if (!empty($contentId) && is_numeric($contentId)) {
+            $contentIdRows = array(array('id' => $contentId));
         } else {
             $contentIdRows = $this->queryContentListByContentType($offset, $limit, $contentClassId);
         }
 
         $count = 0 + $offset;
-        foreach($contentIdRows as $row) {
+        foreach ($contentIdRows as $row) {
             $count++;
             /** @var Content $content */
             $content = $this->getContentById($row['id']);
-            $logPrefix = "ContentId [".$content->id."] ".$content->getName();
+            $logPrefix = sprintf("Row %s: ContentId [%s] %s ", $count, $content->id, $content->getName());
             $output->writeln($logPrefix);
             // HOLD $this->logger->info($logPrefix);
             $this->checkContentFieldData($content);
@@ -144,22 +165,24 @@ class ValidateContentRelationsCommand extends Command {
         $this->displayReport();
 
         // Summary:
-        echo "Query: count: ".$count." offset: ".$offset. " limit: ".$limit."\n";
+        echo "Query: count: " . $count . " offset: " . $offset . " limit: " . $limit . "\n";
 
         return Command::SUCCESS;
 
     }
 
-    protected function checkContentFieldData(Content $content) {
-        $cid = (int) $content->id;
+    protected function checkContentFieldData(Content $content)
+    {
+        $cid = (int)$content->id;
         $fields = $content->getFields();
         foreach ($fields as $field) {
             $fieldReferenceContentIds = array();
             $fieldIdentifier = $field->getFieldDefinitionIdentifier();
             $fieldType = $field->getFieldTypeIdentifier();
             switch ($fieldType) {
-                case 'ezrichtext': {
-                    try{
+                case 'ezrichtext':
+                {
+                    try {
                         // try the richtext
                         /** @var RichTextValue $value */
                         $value = $field->getValue();
@@ -168,61 +191,62 @@ class ValidateContentRelationsCommand extends Command {
                         // EMBED:
                         // TODO: extract locationIDs
                         // URL
-                    } catch(\Exception $e) {
+                    } catch (Exception $e) {
                         // echo "error..";
                         $this->reportItems[] = array(
-                            'content_id'=>$cid,
-                            'field'=>$fieldIdentifier,
-                            'type'=>$fieldType,
-                            'status'=>self::STATUS_ERROR
+                            'content_id' => $cid,
+                            'field' => $fieldIdentifier,
+                            'type' => $fieldType,
+                            'status' => self::STATUS_ERROR
                         );
                     }
                     break;
                 }
-                case 'ezimageasset': {
+                case 'ezimageasset':
+                {
                     /** @var ImageAssetValue $value */
                     $value = $field->getValue();
-                    if(!empty($value->destinationContentId)) {
+                    if (!empty($value->destinationContentId)) {
                         $fieldReferenceContentIds[] = $value->destinationContentId;
                     }
                     break;
                 }
                 /** TODO other extractors
                  * ezbinaryfile
-                ezboolean
-                ezdatetime
-                ezemail
-                ezform
-                ezgmaplocation
-                ezidentifier
-                ezimage
-                ezimageasset
-                ezinisetting
-                ezinteger
-                ezkeyword
-                ezlandingpage
-                ezobjectrelation
-                ezobjectrelationlist
-                ezoption
-                ezrichtext
-                ezselection
-                ezstring
-                eztags
-                eztext
-                ezurl
+                 * ezboolean
+                 * ezdatetime
+                 * ezemail
+                 * ezform
+                 * ezgmaplocation
+                 * ezidentifier
+                 * ezimage
+                 * ezimageasset
+                 * ezinisetting
+                 * ezinteger
+                 * ezkeyword
+                 * ezlandingpage
+                 * ezobjectrelation
+                 * ezobjectrelationlist
+                 * ezoption
+                 * ezrichtext
+                 * ezselection
+                 * ezstring
+                 * eztags
+                 * eztext
+                 * ezurl
                  */
 
             }
 
             // lookup contentIDs for this field
-            foreach($fieldReferenceContentIds as $refContentId) {
+            foreach ($fieldReferenceContentIds as $refContentId) {
                 $status = $this->queryContentExists($refContentId);
                 $this->reportItems[] = array(
-                    'content_id'=>$cid,
-                    'field'=>$fieldIdentifier,
-                    'type'=>$fieldType,
-                    'ref_content_id'=>$refContentId,
-                    'status'=> $status);
+                    'content_id' => $cid,
+                    'field' => $fieldIdentifier,
+                    'type' => $fieldType,
+                    'ref_content_id' => $refContentId,
+                    'status' => $status);
             }
 
         }
@@ -231,7 +255,8 @@ class ValidateContentRelationsCommand extends Command {
         // If invalid, then log error
     }
 
-    protected function getContentById($contentId) {
+    protected function getContentById($contentId)
+    {
         return $this->repository->sudo(
             function () use ($contentId) {
                 return $this->contentService->loadContent($contentId);
@@ -240,14 +265,15 @@ class ValidateContentRelationsCommand extends Command {
     }
 
 
-    protected function queryContentListByContentType($offset, $limit, $contentClassId){
+    protected function queryContentListByContentType($offset, $limit, $contentClassId)
+    {
         // get set of contentIDs
         $qb = $this->connection->createQueryBuilder();
         $qb->select('id');
-        $qb->from('ezcontentobject');
-        if(!empty($contentClassId)){
-            $qb->where('contentclass_id = :contentclass_id');
-            $qb->setParameter('contentclass_id',$contentClassId);
+        $qb->from($this->contentTable);
+        if (!empty($contentClassId)) {
+            $qb->where(sprintf('%s = :contentclass_id', $this->contentTypeIdField));
+            $qb->setParameter('contentclass_id', $contentClassId);
         }
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
@@ -255,36 +281,38 @@ class ValidateContentRelationsCommand extends Command {
         return $qb->execute()->fetchAllAssociative();
     }
 
-    protected function queryContentExists($contentId) {
-        if(empty($contentId)) {
+    protected function queryContentExists($contentId)
+    {
+        if (empty($contentId)) {
             return self::STATUS_UNKNOWN; // no check
         }
         $qb = $this->connection->createQueryBuilder();
         $qb->select('id')
-            ->from('ezcontentobject')
+            ->from($this->contentTable)
             ->where('id = :contentId')
-            ->setParameter('contentId',$contentId);
+            ->setParameter('contentId', $contentId);
         $result = $qb->execute()->fetchOne();
-        if(!empty($result)){
+        if (!empty($result)) {
             return self::STATUS_VALID;
         }
         return self::STATUS_INVALID;
     }
 
-    protected function displayReport() {
+    protected function displayReport()
+    {
         echo "--- Checks ---\n";
         foreach ($this->reportItems as $error) {
             // show NOT valid entries
-            if($error['status'] !== self::STATUS_VALID) {
+            if ($error['status'] !== self::STATUS_VALID) {
                 $message = "";
-                $message .= "content_id: ".$error['content_id']." ";
-                $message .= "[".$error['field']."] ";
-                $message .= "(".$error['type'].") ";
-                if(array_key_exists('ref_content_id',$error)){
-                    $message .= "ref_content_id: ".$error['ref_content_id']." ";
+                $message .= "content_id: " . $error['content_id'] . " ";
+                $message .= "[" . $error['field'] . "] ";
+                $message .= "(" . $error['type'] . ") ";
+                if (array_key_exists('ref_content_id', $error)) {
+                    $message .= "ref_content_id: " . $error['ref_content_id'] . " ";
                 }
-                if(array_key_exists('status',$error)){
-                    $message .= $error['status']." ";
+                if (array_key_exists('status', $error)) {
+                    $message .= $error['status'] . " ";
                 }
                 $message .= "\n";
                 // log errors to file

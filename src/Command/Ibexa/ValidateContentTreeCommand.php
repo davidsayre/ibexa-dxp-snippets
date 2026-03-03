@@ -7,6 +7,7 @@
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DBALException;
 use Ibexa\Contracts\Core\Repository\LocationService;
 use Ibexa\Contracts\Core\Repository\PermissionResolver;
 use Ibexa\Contracts\Core\Repository\UserService;
@@ -22,7 +23,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ValidateContentTreeCommand extends Command {
+class ValidateContentTreeCommand extends Command
+{
 
     protected Connection $connection;
     protected Repository $repository;
@@ -39,16 +41,24 @@ class ValidateContentTreeCommand extends Command {
 
     public const COMMAND_NAME = 'app:validate-content:tree';
 
+    private $ibexaVersion = 5;
+    private $contentTable = 'ibexa_content';
+    private $contentTypeTable = 'ibexa_content_type';
+    private $contentTypeNameTable = 'ibexa_content_type_name';
+    private $contentTypeIdField = 'content_type_id';
+
+    private $contentTreeTable = 'ibexa_content_tree';
+
     /**
-     * @throws \Doctrine\DBAL\DBALException
+     * @throws DBALException
      */
     public function __construct(
-        Connection $connection,
-        Repository $repository,
-        ContentService $contentService,
-        LocationService $locationService,
-        LoggerInterface $validateContentLogger,
-        UserService $userService,
+        Connection         $connection,
+        Repository         $repository,
+        ContentService     $contentService,
+        LocationService    $locationService,
+        LoggerInterface    $validateContentLogger,
+        UserService        $userService,
         PermissionResolver $permissionResolver
     )
     {
@@ -65,7 +75,6 @@ class ValidateContentTreeCommand extends Command {
     protected function configure(): void
     {
         $this
-            
             ->setDescription('Validate Content Tree')
             ->addOption(
                 'offset',
@@ -81,7 +90,19 @@ class ValidateContentTreeCommand extends Command {
                 'Query limit',
                 10
             )
+            ->addOption('ibexa-version', null, InputOption::VALUE_OPTIONAL, 'IBEXA version', 5)
         ;
+    }
+
+    protected function ibexaVersionTableSwitcher()
+    {
+        if ($this->ibexaVersion === 4) {
+            $this->contentTable = 'ezcontentobject';
+            $this->contentTypeTable = 'ezcontentclass';
+            $this->contentTypeNameTable = 'ezcontentclass_name';
+            $this->contentTypeIdField = 'contentclass_id';
+            $this->contentTreeTable = 'ezcontentobject_tree';
+        }
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
@@ -101,10 +122,14 @@ class ValidateContentTreeCommand extends Command {
         $this->input = $input;
         $this->output = $output;
 
+        // hackery for now, hope to read from kernel instead
+        $this->ibexaVersion = $this->input->getOption('ibexa-version');
+        $this->ibexaVersionTableSwitcher();
+
         $offset = intval($input->getOption('offset'));
         $limit = intval($input->getOption('limit'));
 
-       $this->runAsUser('admin');
+        $this->runAsUser('admin');
 
         $this->output->writeln('Running ..');
         $this->output->writeln('');
@@ -113,7 +138,7 @@ class ValidateContentTreeCommand extends Command {
 
         $count = 0 + $offset;
 
-        foreach($locationIdRows as $row) {
+        foreach ($locationIdRows as $row) {
             $count++;
             $mainNodeId = $row['main_node_id'];
             $nodeId = $row['node_id'];
@@ -121,27 +146,27 @@ class ValidateContentTreeCommand extends Command {
             $content = $this->getContentById($contentId);
             //$location = $this->getLocationById($locationId);
             $logPrefix = "contentID: ["
-                .$content->id."] '"
-                .$content->getName()
-                ."' (".$content->getContentType()->identifier
-                .") [status "
-                .$content->versionInfo->status."] "
-                ."mainLocationID: [".$mainNodeId."] "
-                ."nodeId: [".$nodeId."]"
-            ;
-            $output->writeln( $logPrefix);
+                . $content->id . "] '"
+                . $content->getName()
+                . "' (" . $content->getContentType()->identifier
+                . ") [status "
+                . $content->versionInfo->status . "] "
+                . "mainLocationID: [" . $mainNodeId . "] "
+                . "nodeId: [" . $nodeId . "]";
+            $output->writeln($logPrefix);
         }
 
-        $output->writeln("Check above. There should be at least 1 row with a matching main_node_id = node_id");
+        $output->writeln("Done. Any locations where main_node_id != node_id checked");
 
         // Summary:
-        echo "Query: count: ".$count." offset: ".$offset. " limit: ".$limit."\n";
+        echo "Query: count: " . $count . " offset: " . $offset . " limit: " . $limit . "\n";
 
         return Command::SUCCESS;
 
     }
 
-    public function runAsUser($sUserLogin) {
+    public function runAsUser($sUserLogin)
+    {
         $user = $this->userService->loadUserByLogin($sUserLogin);
         $this->permissionResolver->setCurrentUserReference($user);
     }
@@ -150,7 +175,8 @@ class ValidateContentTreeCommand extends Command {
      * @param $contentId
      * @return Content
      */
-    protected function getContentById($contentId) {
+    protected function getContentById($contentId)
+    {
         return $this->repository->sudo(
             function () use ($contentId) {
                 return $this->contentService->loadContent($contentId);
@@ -162,7 +188,8 @@ class ValidateContentTreeCommand extends Command {
      * @param $locationId
      * @return Location
      */
-    protected function getLocationById($locationId) {
+    protected function getLocationById($locationId)
+    {
         return $this->repository->sudo(
             function () use ($locationId) {
                 return $this->locationService->loadLocation($locationId);
@@ -170,11 +197,12 @@ class ValidateContentTreeCommand extends Command {
         );
     }
 
-    protected function queryInvalidMainLocations($offset, $limit) {
+    protected function queryInvalidMainLocations($offset, $limit)
+    {
         $qb = $this->connection->createQueryBuilder();
         $qb->addSelect('contentobject_id as content_id, main_node_id, node_id');
-        $qb->from('ezcontentobject_tree');
-        $qb->where('contentobject_id in (select contentobject_id from ezcontentobject_tree where main_node_id != node_id)');
+        $qb->from($this->contentTreeTable);
+        $qb->where(sprintf('contentobject_id in (select contentobject_id from %s where main_node_id != node_id)', $this->contentTreeTable));
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
         $qb->orderBy('contentobject_id');

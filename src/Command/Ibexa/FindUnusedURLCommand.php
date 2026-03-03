@@ -16,6 +16,7 @@ use Ibexa\Contracts\Core\Repository\Values\URL\URLQuery;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use const PHP_INT_MAX;
 
 class FindUnusedURLCommand extends Command
 {
@@ -25,10 +26,11 @@ class FindUnusedURLCommand extends Command
     private $permissionResolver;
 
     public function __construct(
-        URLService $urlService,
-        UserService $userService,
+        URLService         $urlService,
+        UserService        $userService,
         PermissionResolver $permissionResolver
-    ) {
+    )
+    {
         $this->urlService = $urlService;
         $this->userService = $userService;
         $this->permissionResolver = $permissionResolver;
@@ -47,7 +49,7 @@ class FindUnusedURLCommand extends Command
 
         $query = new URLQuery();
         $query->filter = new MatchAll();
-        $query->limit = \PHP_INT_MAX;
+        $query->limit = PHP_INT_MAX;
 
         foreach ($this->urlService->findUrls($query) as $r) {
             if ($this->urlService->findUsages($r)->totalCount === 0) {

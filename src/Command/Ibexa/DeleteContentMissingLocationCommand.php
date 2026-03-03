@@ -7,6 +7,8 @@
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DBALException;
+use Ibexa\Contracts\Core\Repository\LocationService;
 use Ibexa\Contracts\Core\Repository\PermissionResolver;
 use Ibexa\Contracts\Core\Repository\UserService;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
@@ -37,8 +39,20 @@ class DeleteContentMissingLocationCommand extends Command
 
     public const COMMAND_NAME = 'app:delete-content-missing-location';
 
+    private $ibexaVersion = 5;
+    private $contentTable = 'ibexa_content';
+    private $contentTreeTable = 'ibexa_content_tree';
+    private LocationService $locationService;
+
     /**
-     * @throws \Doctrine\DBAL\DBALException
+     * @param Connection $connection
+     * @param Repository $repository
+     * @param ContentService $contentService
+     * @param LoggerInterface $validateContentLogger
+     * @param UserService $userService
+     * @param PermissionResolver $permissionResolver
+     * @param LocationService $locationService
+     * @throws DBALException
      */
     public function __construct(
         Connection         $connection,
@@ -46,7 +60,7 @@ class DeleteContentMissingLocationCommand extends Command
         ContentService     $contentService,
         LoggerInterface    $validateContentLogger,
         UserService        $userService,
-        PermissionResolver $permissionResolver
+        PermissionResolver $permissionResolver, LocationService $locationService
     )
     {
         parent::__construct(self::COMMAND_NAME);
@@ -56,6 +70,15 @@ class DeleteContentMissingLocationCommand extends Command
         $this->logger = $validateContentLogger;
         $this->userService = $userService;
         $this->permissionResolver = $permissionResolver;
+        $this->locationService = $locationService;
+    }
+
+    protected function ibexaVersionTableSwitcher()
+    {
+        if ($this->ibexaVersion === 4) {
+            $this->contentTable = 'ezcontentobject';
+            $this->contentTreeTable = 'ezcontentobject_tree';
+        }
     }
 
     protected function configure(): void
@@ -63,40 +86,41 @@ class DeleteContentMissingLocationCommand extends Command
         $this
             ->setDescription('Validate Content Tree')
             ->addOption(
-                'content_id',
-                'i',
+                'content-id',
+                null,
                 InputOption::VALUE_REQUIRED,
                 'specific Content ID; else query content by limit'
             )
             ->addOption(
                 'content-status',
-                't',
+                null,
                 InputOption::VALUE_REQUIRED,
                 'specific content status 0/Draft; 1/Published; 2/Pending; 3/Archived; 4/Rejected; 5/Internal Draft; 6/Repeat; 7/Queued'
             )
             ->addOption(
                 'offset',
-                'o',
+                null,
                 InputOption::VALUE_REQUIRED,
                 'Query offset',
                 0
             )
             ->addOption(
                 'limit',
-                'm',
+                null,
                 InputOption::VALUE_REQUIRED,
                 'Query limit',
                 10
             )
             ->addOption('remote-id-prefix', null, InputOption::VALUE_OPTIONAL, 'Remote ID prefix')
-            ->addOption('delete-confirm', null, InputOption::VALUE_OPTIONAL, 'CONFIRM DELETION (CAREFUL) requires remote-id-prefix');
+            ->addOption('delete-confirm', null, InputOption::VALUE_OPTIONAL, 'CONFIRM DELETION (CAREFUL) requires remote-id-prefix')
+            ->addOption('ibexa-version', null, InputOption::VALUE_OPTIONAL, 'IBEXA version', 5);
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $contentId = $input->getOption('content_id');
+        $contentId = $input->getOption('content-id');
         if (!empty($contentId) && !is_numeric($contentId)) {
-            throw new InvalidArgumentException('content_id optional value has to be an integer.');
+            throw new InvalidArgumentException('content-id optional value has to be an integer.');
         }
         $offset = $input->getOption('offset');
         if (!empty($offset) && !is_numeric($offset)) {
@@ -108,12 +132,17 @@ class DeleteContentMissingLocationCommand extends Command
         }
     }
 
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->input = $input;
         $this->output = $output;
 
-        $contentId = $input->getOption('content_id');
+        // hackery for now, hope to read from kernel instead
+        $this->ibexaVersion = $this->input->getOption('ibexa-version');
+        $this->ibexaVersionTableSwitcher();
+
+        $contentId = $input->getOption('content-id');
         $contentStatus = $input->getOption('content-status');
         $offset = intval($input->getOption('offset'));
         $limit = intval($input->getOption('limit'));
@@ -140,13 +169,13 @@ class DeleteContentMissingLocationCommand extends Command
         foreach ($contentIdRows as $row) {
             $count++;
             $content = $this->getContentById($row['id']);
-            $logPrefix = "contentID: [" . $content->id . "] '" . $content->getName() . "' (" . $content->getContentType()->identifier . ") [status " . $content->versionInfo->status . "] [" . $content->contentInfo->remoteId . "] ";
+            $logPrefix = sprintf("contentID: [%s] %s (%s) [status %s] [%s] ", $content->id, $content->getName(), $content->getContentType()->identifier, $content->versionInfo->status, $content->contentInfo->remoteId);
             $output->writeln($logPrefix . " no location");
             $this->deleteContent($content, $logPrefix);
         }
 
         // Summary:
-        echo "Query: count: " . $count . " offset: " . $offset . " limit: " . $limit . "\n";
+        $output->writeln(sprintf('Total: %s, processed: %s, limit: %s, offset: %s ', count($contentIdRows), $count, $offset, $limit));
 
         return Command::SUCCESS;
 
@@ -160,8 +189,21 @@ class DeleteContentMissingLocationCommand extends Command
 
     public function deleteContent(Content $content, $logPrefix)
     {
+        // check truly no location
+        $mainLanguageId = $content->contentInfo->mainLocationId;
+        if (!empty($mainLanguageId) || $mainLanguageId === 0) {
+            $this->output->write('<error>Found main location! skip</error> ');
+            return;
+        }
+
         if ($this->save === true) {
-            $this->contentService->deleteContent($content->contentInfo);
+            // sudo delete
+            $this->repository->sudo(
+                function () use ($content) {
+                    $this->contentService->deleteContent($content->contentInfo);
+                }
+            );
+
             $this->output->writeLn($logPrefix . "[Deleted]"); // linebreak
             $this->totalDeleted++;
         } else {
@@ -172,27 +214,29 @@ class DeleteContentMissingLocationCommand extends Command
 
     protected function queryContentListByContentType($offset, $limit, $contentStatus = "", $remoteIdPrefix = "")
     {
-        /*
-         * select * from ezcontentobject where id not in (select contentobject_id from ezcontentobject_name)
-         */
+
         // get set of contentIDs
         $qb = $this->connection->createQueryBuilder();
-        $qb->select('id');
-        $qb->from('ezcontentobject');
+        $qb->select('c.id');
+        $qb->from($this->contentTable, 'c');
+        $qb->leftJoin('c', $this->contentTreeTable, 't', 't.contentobject_id = c.id');
         $qb->where('1 = 1');
         if (!empty($contentStatus)) {
-            $qb->andWhere('status = :status');
+            $qb->andWhere('c.status = :status');
             $qb->setParameter('status', $contentStatus);
         }
         if (!empty($remoteIdPrefix)) {
-            $qb->andWhere('remote_id like  "' . $remoteIdPrefix . "%" . '"'); // like as var
+            $qb->andWhere('c.remote_id like  "' . $remoteIdPrefix . "%" . '"'); // like as var
         }
-        $qb->andWhere('id not in (select contentobject_id from ezcontentobject_tree)');
+        $qb->andWhere('t.node_id is null');
+        // BAD $qb->andWhere(sprintf('id not in (select contentobject_id from %s)', $this->contentTreeTable));
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
 
         echo $qb->getSQL() . "\n";
-        echo print_r($qb->getParameters());
+        if (count($qb->getParameters())) {
+            echo print_r($qb->getParameters());
+        }
 
         return $qb->execute()->fetchAllAssociative();
     }

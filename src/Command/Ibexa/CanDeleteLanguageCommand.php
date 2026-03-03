@@ -9,7 +9,9 @@ declare(strict_types=1);
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Ibexa\Core\Persistence\Legacy\Content\Language\Gateway\DoctrineDatabase;
 use InvalidArgumentException;
 use Symfony\Component\Console\Command\Command;
@@ -23,17 +25,17 @@ class CanDeleteLanguageCommand extends Command
     /**
      * The native Doctrine connection.
      *
-     * @var \Doctrine\DBAL\Connection
+     * @var Connection
      */
     private $connection;
 
-    /** @var \Doctrine\DBAL\Platforms\AbstractPlatform */
+    /** @var AbstractPlatform */
     private $dbPlatform;
 
     public const COMMAND_NAME = 'app:can-delete-language';
 
     /**
-     * @throws \Doctrine\DBAL\DBALException
+     * @throws DBALException
      */
     public function __construct(Connection $connection)
     {
@@ -51,8 +53,7 @@ class CanDeleteLanguageCommand extends Command
                 'l',
                 InputOption::VALUE_REQUIRED,
                 'Language_id'
-            )
-        ;
+            );
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
@@ -84,7 +85,7 @@ class CanDeleteLanguageCommand extends Command
         }
 
         foreach ($tableErrors as $tableError) {
-            echo "language in use : ".$tableError."\n";
+            echo "language in use : " . $tableError . "\n";
         }
 
 
@@ -98,11 +99,12 @@ class CanDeleteLanguageCommand extends Command
      * @param string|null $languageIdColumn optional column name containing explicit language id
      */
     private function countTableData(
-        int $languageId,
-        string $tableName,
-        string $languageMaskColumn,
+        int     $languageId,
+        string  $tableName,
+        string  $languageMaskColumn,
         ?string $languageIdColumn = null
-    ): int {
+    ): int
+    {
         $query = $this->connection->createQueryBuilder();
         $query
             // avoiding using "*" as count argument, but don't specify column name because it varies

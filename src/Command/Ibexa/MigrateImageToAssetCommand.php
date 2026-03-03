@@ -12,6 +12,8 @@
 
 namespace App\Command\Ibexa;
 
+use Exception;
+use eZ\Publish\Core\Base\Exceptions\NotFoundException;
 use Ibexa\Contracts\Core\Repository\ContentService;
 use Ibexa\Contracts\Core\Repository\ContentTypeService;
 use Ibexa\Contracts\Core\Repository\LocationService;
@@ -32,7 +34,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MigrateImageToAssetCommand extends Command
 {
-    public const COMMAND_NAME ='app:migrate_image_to_asset';
+    public const COMMAND_NAME = 'app:migrate_image_to_asset';
 
     const IMAGE_CONTENT_TYPE = 'image';
     const IMAGE_LANGUAGE = 'eng-US';
@@ -81,13 +83,13 @@ class MigrateImageToAssetCommand extends Command
     protected $save = false;
 
     public function __construct(
-        ContentService $contentService,
+        ContentService     $contentService,
         ContentTypeService $contentTypeService,
-        LocationService $locationService,
-        SearchService $searchService,
+        LocationService    $locationService,
+        SearchService      $searchService,
         PermissionResolver $permissionResolver,
-        UserService $userService,
-        LoggerInterface $migrateImagesLogger
+        UserService        $userService,
+        LoggerInterface    $migrateImagesLogger
     )
     {
         $this->contentService = $contentService;
@@ -115,7 +117,7 @@ class MigrateImageToAssetCommand extends Command
             ->addArgument('source_field', InputArgument::REQUIRED, 'Source field identifier')
             ->addArgument('target_field', InputArgument::REQUIRED, 'Target field identifier')
             ->addArgument('target_location', InputArgument::REQUIRED, 'Target location id where image objects should be created')
-            ->addOption('save', '--save',InputOption::VALUE_OPTIONAL, 'save 1 = live DB operations');
+            ->addOption('save', '--save', InputOption::VALUE_OPTIONAL, 'save 1 = live DB operations');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -126,7 +128,7 @@ class MigrateImageToAssetCommand extends Command
         $imageTargetLocationId = $input->getArgument('target_location');
 
         // save / dry run
-        if($input->getOption('save') == "1" | $input->getOption('save') == true){
+        if ($input->getOption('save') == "1" | $input->getOption('save') == true) {
             $this->save = true;
         }
 
@@ -137,13 +139,13 @@ class MigrateImageToAssetCommand extends Command
         $sourceLocation = $this->locationService->loadLocation($this->searchParentLocationId);
         $searchResults = $this->loadContentObjects($sourceLocation, $contentTypeIdentifier);
 
-        $this->log("info","Processing [begin]");
+        $this->log("info", "Processing [begin]");
         foreach ($searchResults as $searchHit) {
             /** @var ContentObject $contentObject */
             $contentObject = $searchHit->valueObject;
             $this->updateContentObject($contentObject, $sourceFieldIdentifier, $targetFieldIdentifier, $imageTargetLocationId);
         }
-        $this->log("info","Processing [complete]");
+        $this->log("info", "Processing [complete]");
 
         return self::SUCCESS;
     }
@@ -157,11 +159,11 @@ class MigrateImageToAssetCommand extends Command
             new Query\Criterion\ContentTypeIdentifier($contentTypeIdentifier)
         ];
         // if section limiter applied
-        if(!empty($this->searchSectionIdentifier)) {
+        if (!empty($this->searchSectionIdentifier)) {
             $mainAndCriteria[] = new Query\Criterion\SectionIdentifier($this->searchSectionIdentifier);
         }
         // if subtee limited
-        if(!empty($this->searchParentLocationId)) {
+        if (!empty($this->searchParentLocationId)) {
             $mainAndCriteria[] = new Query\Criterion\Subtree($parentLocation->pathString);
         }
 
@@ -174,14 +176,14 @@ class MigrateImageToAssetCommand extends Command
 
     private function updateContentObject(ContentObject $contentObject, $sourceFieldIdentifier, $targetFieldIdentifier, $imageTargetLocationId): void
     {
-        $contentShortName = "[".$contentObject->id."] ".$contentObject->getName();
-        $this->log("info",$contentShortName." [validating]");
+        $contentShortName = "[" . $contentObject->id . "] " . $contentObject->getName();
+        $this->log("info", $contentShortName . " [validating]");
 
         // CHECK: asset field (ezimageasset) is empty
         /** @var ImageAssetFieldValue $assetFieldValue */
         $assetFieldValue = $contentObject->getFieldValue($targetFieldIdentifier);
-        if( is_numeric($assetFieldValue->destinationContentId) and $assetFieldValue->destinationContentId > 0) {
-            $this->log("error",$contentShortName." [skip] asset already populated");
+        if (is_numeric($assetFieldValue->destinationContentId) and $assetFieldValue->destinationContentId > 0) {
+            $this->log("error", $contentShortName . " [skip] asset already populated");
             return;
         }
 
@@ -190,37 +192,37 @@ class MigrateImageToAssetCommand extends Command
         // Check image (ezimage) populated
         /** @var ImageFieldValue $imageFieldValue */
         $imageFieldValue = $contentObject->getFieldValue($sourceFieldIdentifier);
-        if(empty($imageFieldValue)) {
-            $this->log("error",$contentShortName." [skip] Source image field empty");
+        if (empty($imageFieldValue)) {
+            $this->log("error", $contentShortName . " [skip] Source image field empty");
             return;
         } else {
-            $this->log("info",$contentShortName." [ok] source ezimage has data");
+            $this->log("info", $contentShortName . " [ok] source ezimage has data");
             // CHECK: source image on disk
-            if(!file_exists($imageFieldValue->uri)) {
-                $this->log("error",$contentShortName." [error] source image not on disk");
+            if (!file_exists($imageFieldValue->uri)) {
+                $this->log("error", $contentShortName . " [error] source image not on disk");
                 return;
             }
             // CHECK source image width
-            if($imageFieldValue->height < $this->minImageHeightAllow) {
-                $this->log("error", $contentShortName." [deny] image height ".$imageFieldValue->height);
+            if ($imageFieldValue->height < $this->minImageHeightAllow) {
+                $this->log("error", $contentShortName . " [deny] image height " . $imageFieldValue->height);
                 return;
             }
             // CHECK source image width
-            if($imageFieldValue->width < $this->minImageWidthAllow) {
-                $this->log("error", $contentShortName." [deny] image width ".$imageFieldValue->width);
+            if ($imageFieldValue->width < $this->minImageWidthAllow) {
+                $this->log("error", $contentShortName . " [deny] image width " . $imageFieldValue->width);
                 return;
             }
         }
 
         $imageObjectRemoteId = 'image-asset-' . $contentObject->id . '-' . $contentObject->getField($sourceFieldIdentifier)->fieldDefIdentifier;
 
-        if($this->save === true) {
-            $this->log("info",$contentShortName." [save] creating content update ... ");
+        if ($this->save === true) {
+            $this->log("info", $contentShortName . " [save] creating content update ... ");
 
             // get the new / existing image to assign
             $imageObject = $this->createOrUpdateImage($imageObjectRemoteId, $imageTargetLocationId, $imageFieldValue);
 
-            $contentDraft = $this->contentService->createContentDraft( $contentObject->contentInfo );
+            $contentDraft = $this->contentService->createContentDraft($contentObject->contentInfo);
 
             $contentUpdateStruct = $this->contentService->newContentUpdateStruct();
             $contentUpdateStruct->initialLanguageCode = MigrateImageToAssetCommand::IMAGE_LANGUAGE;
@@ -230,10 +232,10 @@ class MigrateImageToAssetCommand extends Command
 
             $draft = $this->contentService->updateContent($contentDraft->versionInfo, $contentUpdateStruct);
             $content = $this->contentService->publishVersion($draft->versionInfo);
-            $this->log("info",$contentShortName." [Save] content published");
+            $this->log("info", $contentShortName . " [Save] content published");
 
         } else {
-            $this->log("info",$contentShortName." [Dry run] would have updated content");
+            $this->log("info", $contentShortName . " [Dry run] would have updated content");
         }
 
     }
@@ -253,8 +255,8 @@ class MigrateImageToAssetCommand extends Command
         $imagePath = getcwd() . '/public' . $imageFieldValue->uri;
 
         // dry run
-        if($this->save !== true) {
-            $this->log("info","Dry run image asset create");
+        if ($this->save !== true) {
+            $this->log("info", "Dry run image asset create");
             return null;
         }
 
@@ -265,7 +267,7 @@ class MigrateImageToAssetCommand extends Command
 
             // TODO: maybe only update the SAME version. Don't want multiple versions for each run
 
-            $contentDraft = $this->contentService->createContentDraft( $contentObject->contentInfo );
+            $contentDraft = $this->contentService->createContentDraft($contentObject->contentInfo);
 
             $contentUpdateStruct = $this->contentService->newContentUpdateStruct();
             $contentUpdateStruct->initialLanguageCode = MigrateImageToAssetCommand::IMAGE_LANGUAGE;
@@ -278,7 +280,7 @@ class MigrateImageToAssetCommand extends Command
             $draft = $this->contentService->updateContent($contentDraft->versionInfo, $contentUpdateStruct);
             $content = $this->contentService->publishVersion($draft->versionInfo);
 
-        } catch (\eZ\Publish\Core\Base\Exceptions\NotFoundException $e){
+        } catch (NotFoundException $e) {
 
             // Not found, create new object
 
@@ -296,12 +298,12 @@ class MigrateImageToAssetCommand extends Command
                 $draft = $this->contentService->createContent($contentCreateStruct, [$locationCreateStruct]);
                 $content = $this->contentService->publishVersion($draft->versionInfo);
 
-            } catch (\Exception $e){
+            } catch (Exception $e) {
                 dump($e);
                 die();
             }
 
-        } catch (\Exception $e){
+        } catch (Exception $e) {
             dump($e);
             die();
         }
@@ -309,8 +311,9 @@ class MigrateImageToAssetCommand extends Command
         return $content;
 
     }
-    
-    public function log($type, $message) {
+
+    public function log($type, $message)
+    {
         $this->logger->log($type, $message);
         $this->output->writeln($message);
     }

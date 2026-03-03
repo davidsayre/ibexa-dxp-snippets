@@ -6,6 +6,7 @@
 
 namespace App\Command\Ibexa;
 
+use Exception;
 use Ibexa\FieldTypeRichText\FieldType\RichText\Value as RichTextValue;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -73,14 +74,14 @@ class ValidateRichtextXMLCommand extends Command
     protected function validateRichTextField($xml)
     {
         try {
-            $this->output->writeln(sprintf("<info> %s</info>",$xml));
+            $this->output->writeln(sprintf("<info> %s</info>", $xml));
             $this->output->writeln("Testing XML with length " . strlen($xml) . " characters");
             $test = new RichTextValue($xml);
-            $this->output->writeln(sprintf("VALID: <comment>%s</comment>",$test->xml->saveXML()));
+            $this->output->writeln(sprintf("VALID: <comment>%s</comment>", $test->xml->saveXML()));
             //print_r($test);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $errorMessage = $e->getMessage();
-            $this->output->writeln(sprintf("<error>%s</error>",$errorMessage));
+            $this->output->writeln(sprintf("<error>%s</error>", $errorMessage));
         }
     }
 
