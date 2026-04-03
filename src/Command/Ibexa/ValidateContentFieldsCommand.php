@@ -124,23 +124,6 @@ class ValidateContentFieldsCommand extends Command
         }
     }
 
-    protected function queryLocationExists($locationId)
-    {
-        if (empty($locationId)) {
-            return self::STATUS_UNKNOWN; // no check
-        }
-        $qb = $this->connection->createQueryBuilder();
-        $qb->select('node_id')
-            ->from($this->contentTreeTable)
-            ->where('node_id = :locationId')
-            ->setParameter('locationId', $locationId);
-        $result = $qb->execute()->fetchOne();
-        if (!empty($result)) {
-            return self::STATUS_VALID;
-        }
-        return self::STATUS_INVALID;
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->input = $input;
@@ -204,6 +187,23 @@ class ValidateContentFieldsCommand extends Command
         }
     }
 
+    protected function queryLocationExists($locationId)
+    {
+        if (empty($locationId)) {
+            return self::STATUS_UNKNOWN; // no check
+        }
+        $qb = $this->connection->createQueryBuilder();
+        $qb->select('node_id')
+            ->from($this->contentTreeTable)
+            ->where('node_id = :locationId')
+            ->setParameter('locationId', $locationId);
+        $result = $qb->execute()->fetchOne();
+        if (!empty($result)) {
+            return self::STATUS_VALID;
+        }
+        return self::STATUS_INVALID;
+    }
+
     protected function queryContentListByContentType($offset, $limit, $contentClassId)
     {
         // get set of contentIDs
@@ -251,6 +251,9 @@ class ValidateContentFieldsCommand extends Command
     {
 
         $fields = $content->getFields();
+
+        // TODO: check for content with duplicate fields on the same language and version number (is possible)
+
         /** @var Field $field */
         foreach ($fields as $field) {
 
@@ -476,6 +479,5 @@ class ValidateContentFieldsCommand extends Command
     }
 
 }
-
 
 ?>
