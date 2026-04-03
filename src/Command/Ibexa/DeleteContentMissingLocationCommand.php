@@ -75,7 +75,7 @@ class DeleteContentMissingLocationCommand extends Command
 
     protected function ibexaVersionTableSwitcher()
     {
-        if ($this->ibexaVersion === 4) {
+        if ($this->ibexaVersion < 5) {
             $this->contentTable = 'ezcontentobject';
             $this->contentTreeTable = 'ezcontentobject_tree';
         }

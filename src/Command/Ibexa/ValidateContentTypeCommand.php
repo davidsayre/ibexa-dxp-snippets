@@ -75,7 +75,7 @@ class ValidateContentTypeCommand extends Command
 
     protected function ibexaVersionTableSwitcher()
     {
-        if ($this->ibexaVersion === 4) {
+        if ($this->ibexaVersion < 5) {
             $this->contentTypeTable = 'ezcontentclass';
             $this->contentTypeNameTable = 'ezcontentclass_name';
             $this->contentTypeIdField = 'contentclass_id';

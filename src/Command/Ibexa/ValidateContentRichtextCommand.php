@@ -63,7 +63,7 @@ class ValidateContentRichtextCommand extends Command
 
     protected function ibexaVersionTableSwitcher()
     {
-        if ($this->ibexaVersion === 4) {
+        if ($this->ibexaVersion < 5) {
             $this->contentTable = 'ezcontentobject';
             $this->contentTypeTable = 'ezcontentclass';
             $this->contentTypeNameTable = 'ezcontentclass_name';

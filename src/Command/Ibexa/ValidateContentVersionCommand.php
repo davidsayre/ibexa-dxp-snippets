@@ -79,7 +79,7 @@ class ValidateContentVersionCommand extends Command
 
     protected function ibexaVersionTableSwitcher()
     {
-        if ($this->ibexaVersion === 4) {
+        if ($this->ibexaVersion < 5) {
             $this->contentTable = 'ezcontentobject';
             $this->contentNameTable = 'ezcontentobject_name';
             $this->contentVersionTable = 'ezcontentobject_version';
