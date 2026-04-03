@@ -10,9 +10,12 @@ use Doctrine\ORM\Mapping as ORM;
 class ReportItemImageArchive
 {
 
+    const STATUS_UNKNOWN = 'unknown';
     const STATUS_NOT_IN_USE = 'not_in_use'; // no references
     const STATUS_IN_USE = 'in_use'; // used by any content
     const STATUS_IN_USE_ARCHIVE_ONLY = 'in_use_archive_only'; // used, but references are all in archive section
+
+    const STATUS_ALREADY_ARCHIVED = 'already_archived'; // image is already archived, skip
 
     const STATUS_MANUAL_SKIP = 'manual_skip'; // if admin decides to skip image entirely
 
@@ -46,7 +49,7 @@ class ReportItemImageArchive
      * @ORM\Column(type="string", length=50, nullable=false)
      * @var string
      */
-    private $status;
+    private $status = self::STATUS_UNKNOWN;
 
     public function getId(): int
     {

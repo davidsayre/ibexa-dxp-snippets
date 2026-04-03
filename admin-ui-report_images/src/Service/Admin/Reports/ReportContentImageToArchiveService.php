@@ -64,9 +64,11 @@ class ReportContentImageToArchiveService extends ReportContentService
      */
     protected function queryContent($limit = 1, $offset = 0)
     {
+        // Only look at published content (0 = draft; 2 = trashed)
         $sql = "select distinct eco.id as contentobject_id
             from ezcontentobject eco, ezcontentclass ecc
-            where eco.contentclass_id = ecc.id and ecc.identifier in (:classes)
+            where eco.contentclass_id = ecc.id and ecc.identifier in (:classes)            
+            and eco.status = 1
             order by eco.id 
             limit :limit 
             offset :offset";
@@ -142,6 +144,11 @@ class ReportContentImageToArchiveService extends ReportContentService
                 if(count($contentReverseRelations) === $countReverseRelationsInArchiveSections) {
                     $item->setStatus(ReportItemImageArchive::STATUS_IN_USE_ARCHIVE_ONLY);
                 }
+            }
+
+            // check if image already in archived section(s)
+            if(array_search($content->contentInfo->getSectionId(), $this->archiveSectionIds) !== false) {
+                $item->setStatus(ReportItemImageArchive::STATUS_ALREADY_ARCHIVED);
             }
 
             $parsedResult['item'] = $item; // store
