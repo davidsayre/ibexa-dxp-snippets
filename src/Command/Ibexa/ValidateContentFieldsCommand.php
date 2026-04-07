@@ -254,6 +254,15 @@ class ValidateContentFieldsCommand extends Command
 
         // TODO: check for content with duplicate fields on the same language and version number (is possible)
 
+        /* EXAMPLE query to find content with duplicate fields
+        select count(ecoa.id) , eco.id, eco.name, ecoa.version, ecoa.language_code
+        from ezcontentobject eco, ezcontentobject_attribute ecoa
+        where eco.id = ecoa.contentobject_id
+        group by eco.id, eco.name, ecoa.version, ecoa.language_code
+        having count(ecoa.id) > 1
+
+        */
+
         /** @var Field $field */
         foreach ($fields as $field) {
 
