@@ -17,6 +17,7 @@ use InvalidArgumentException;
 use Ibexa\Contracts\Core\Repository\Values\Content\Query\Criterion;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
 use Ibexa\Core\MVC\Symfony\Routing\UrlAliasRouter;
+use TypeError;
 
 class ValidateImagesCommand extends Command
 {
@@ -33,9 +34,14 @@ class ValidateImagesCommand extends Command
     public const COMMAND_NAME = 'app:validate-images';
 
     private array $reportItems = [];
+    private string $publicDir = "./public"; // no trailing slash
 
-    private $contentTable = 'ezcontentobject';
-    private $contentFieldTable = 'ezcontentobject_attribute';
+    private $ibexaVersion = 5;
+    private $contentTable = 'ibexa_content';
+    private $contentNameTable = 'ibexa_content_name';
+    private $contentVersionTable = 'ibexa_content_version';
+    private $contentVersionVersionField = 'content_version';
+    private $contentFieldTable = 'ibexa_content_field';
 
     /**
      * @throws \Doctrine\DBAL\DBALException
@@ -81,7 +87,19 @@ class ValidateImagesCommand extends Command
                 InputOption::VALUE_REQUIRED,
                 'Query limit',
                 10
-            );
+            )
+            ->addOption('ibexa-version', null, InputOption::VALUE_OPTIONAL, 'IBEXA version', 5);
+    }
+
+    protected function ibexaVersionTableSwitcher()
+    {
+        if ($this->ibexaVersion < 5) {
+            $this->contentTable = 'ezcontentobject';
+            $this->contentNameTable = 'ezcontentobject_name';
+            $this->contentVersionTable = 'ezcontentobject_version';
+            $this->contentVersionVersionField = 'version';
+            $this->contentFieldTable = 'ezcontentobject_attribute';
+        }
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
@@ -104,6 +122,10 @@ class ValidateImagesCommand extends Command
     {
         $this->input = $input;
         $this->output = $output;
+
+        // hackery for now, hope to read from kernel instead
+        $this->ibexaVersion = $this->input->getOption('ibexa-version');
+        $this->ibexaVersionTableSwitcher();
 
         $contentId = $input->getOption('content_id');
         $offset = intval($input->getOption('offset'));
@@ -181,31 +203,43 @@ class ValidateImagesCommand extends Command
         $xml = simplexml_load_string($dataText);
         // $this->output->writeln(sprintf("  Raw Data: %s", $dataText));
 
+        // check image file exists
+        if (!empty($xml->attributes()->dirpath)) {
+            // check directory exists
+            if (!empty($xml->attributes()->filename)) {
+                // check directory + file name exists
+                $fullPath = sprintf("%s/%s/%s", $this->publicDir, $xml->attributes()->dirpath, $xml->attributes()->filename);
+                if (!file_exists($fullPath)) {
+                    $reportFieldItem->errors[] = "file not found: $fullPath";
+                }
+            }
+        }
+
         // check valid XML
         if (empty($xml->attributes()->width)) {
             //$this->output->writeln(" [error] xml missing width attribute value");
-            $reportFieldItem->error = "invalid width xml value";
-            return;
+            $reportFieldItem->errors[] = "empty width xml value: $dataText";
         }
         if (empty($xml->attributes()->height)) {
             //$this->output->writeln(" [error] xml missing height attribute value");
-            $reportFieldItem->error = "invalid height xml value";
-            return;
+            $reportFieldItem->errors[] = "empty height xml value: $dataText";
         }
 
-        // TODO: check image file exists
-
-        // TODO: try and correct attributes based on real file (must exist)
+        // TBD: generate corrected XML for offline fix
 
         // Try generating image variation
-        $variation = $this->imageVariationHandler->getVariation(
-            $field, $imageContent->getVersionInfo(), 'medium'
-        );
-        if (empty($variation->uri)) {
-            $reportFieldItem->error = "invalid imageVariation uri";
-            return;
+        try {
+            $variation = $this->imageVariationHandler->getVariation(
+                $field, $imageContent->getVersionInfo(), 'medium'
+            );
+            if (empty($variation->uri)) {
+                $reportFieldItem->errors[] = "invalid imageVariation uri";
+            }
+        } catch(TypeError $e) {
+            $reportFieldItem->errors[] = "[TypeError] ". $e->getMessage();
+        } catch (\Exception $e) {
+            $reportFieldItem->errors[] = "[Exception] ". $e->getMessage();
         }
-        // $this->output->writeln(sprintf("  Variation [%s]", $variation->uri));
     }
 
     protected function queryRawContentAttributeData($id)
@@ -243,19 +277,19 @@ class ValidateImagesCommand extends Command
         $reportFieldItem->fieldId = 0;
         $reportFieldItem->fieldName = '';
         $reportFieldItem->dataText = '';
-        $reportFieldItem->error = '';
+        $reportFieldItem->errors = [];
         return $reportFieldItem;
     }
 
     protected function displayReport()
     {
-        // TODO: nice output of issues found
+        // Output of report items (errors)
         foreach ($this->reportItems as $reportItem) {
             foreach ($reportItem->fields as $reportFieldItem) {
-                if(!empty($reportFieldItem->error)) {
-                    $this->output->writeln(sprintf("[error] Content %s / Field %d %s %s %s", $reportItem->contentId, $reportFieldItem->fieldId, $reportFieldItem->fieldName, $reportFieldItem->error, $reportFieldItem->dataText));
-                } else {
-                     // DEBUG: $this->output->writeln(sprintf('[ok] Field %d %s', $reportFieldItem->fieldId, $reportFieldItem->fieldName));
+                if (!empty($reportFieldItem->errors)) {
+                    foreach ($reportFieldItem->errors as $reportFieldItemError) {
+                        $this->output->writeln(sprintf("[error] Content %s / Field %d [%s] %s", $reportItem->contentId, $reportFieldItem->fieldId, $reportFieldItem->fieldName, $reportFieldItemError));
+                    }
                 }
             }
         }
