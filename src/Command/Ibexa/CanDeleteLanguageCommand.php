@@ -9,7 +9,6 @@ declare(strict_types=1);
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Ibexa\Core\Persistence\Legacy\Content\Language\Gateway\DoctrineDatabase;
@@ -34,9 +33,6 @@ class CanDeleteLanguageCommand extends Command
 
     public const COMMAND_NAME = 'app:can-delete-language';
 
-    /**
-     * @throws DBALException
-     */
     public function __construct(Connection $connection)
     {
         parent::__construct(self::COMMAND_NAME);

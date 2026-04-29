@@ -43,9 +43,6 @@ class ValidateImagesCommand extends Command
     private $contentVersionVersionField = 'content_version';
     private $contentFieldTable = 'ibexa_content_field';
 
-    /**
-     * @throws \Doctrine\DBAL\DBALException
-     */
     public function __construct(
         Connection       $connection,
         Repository       $repository,

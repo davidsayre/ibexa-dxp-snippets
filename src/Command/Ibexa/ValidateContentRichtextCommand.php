@@ -9,7 +9,6 @@ declare(strict_types=1);
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DBALException;
 use Exception;
 use Ibexa\Core\Repository\Values\Content\Content;
 use Ibexa\Core\Repository\ContentService;
@@ -43,10 +42,6 @@ class ValidateContentRichtextCommand extends Command
 
     private $contentTreeTable = 'ibexa_content_tree';
 
-
-    /**
-     * @throws DBALException
-     */
     public function __construct(
         Connection      $connection,
         Repository      $repository,

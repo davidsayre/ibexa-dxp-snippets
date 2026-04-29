@@ -7,7 +7,6 @@
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DBALException;
 use Ibexa\Contracts\Core\Repository\LocationService;
 use Ibexa\Contracts\Core\Repository\PermissionResolver;
 use Ibexa\Contracts\Core\Repository\UserService;
@@ -52,7 +51,6 @@ class DeleteContentMissingLocationCommand extends Command
      * @param UserService $userService
      * @param PermissionResolver $permissionResolver
      * @param LocationService $locationService
-     * @throws DBALException
      */
     public function __construct(
         Connection         $connection,

@@ -7,7 +7,6 @@
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DBALException;
 use Exception;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
 use Ibexa\Core\Repository\ContentService;
@@ -47,9 +46,6 @@ class ValidateContentRelationsCommand extends Command
     private $contentTypeNameTable = 'ibexa_content_type_name';
     private $contentTypeIdField = 'content_type_id';
 
-    /**
-     * @throws DBALException
-     */
     public function __construct(
         Connection      $connection,
         Repository      $repository,

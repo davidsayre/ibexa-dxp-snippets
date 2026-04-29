@@ -8,7 +8,6 @@ namespace App\Command\Ibexa;
 
 use DateTime;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DBALException;
 use Exception;
 use Ibexa\Contracts\Core\Repository\Values\Content\Query;
 use Ibexa\Core\Repository\ContentService;
@@ -40,9 +39,6 @@ class DeleteUntouchedDraftsCommand extends Command
     private $contentTable = 'ibexa_content';
     private $contentTreeTable = 'ibexa_content_tree';
 
-    /**
-     * @throws DBALException
-     */
     public function __construct(
         Connection      $connection,
         Repository      $repository,

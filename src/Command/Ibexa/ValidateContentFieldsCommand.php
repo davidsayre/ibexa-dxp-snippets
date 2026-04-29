@@ -7,7 +7,6 @@
 namespace App\Command\Ibexa;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DBALException;
 use DOMElement;
 use Exception;
 use Ibexa\Contracts\Core\Repository\Values\Content\Content;
@@ -54,9 +53,6 @@ class ValidateContentFieldsCommand extends Command
 
     private $contentTreeTable = 'ibexa_content_tree';
 
-    /**
-     * @throws DBALException
-     */
     public function __construct(
         Connection      $connection,
         Repository      $repository,
