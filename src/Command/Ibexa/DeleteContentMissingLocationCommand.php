@@ -175,7 +175,7 @@ class DeleteContentMissingLocationCommand extends Command
         }
 
         // Summary:
-        $output->writeln(sprintf('Total: %s, processed: %s, limit: %s, offset: %s ', count($contentIdRows), $count, $offset, $limit));
+        $output->writeln(sprintf('Total: %s, processed: %s, limit: %s, offset: %s ', count($contentIdRows), $count, $limit, $offset));
 
         return Command::SUCCESS;
 
