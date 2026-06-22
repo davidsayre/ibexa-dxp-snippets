@@ -147,3 +147,14 @@ to stop the activity log. Run $this->activityLogService->enable()
 to restart activity log.
 - Thorsten Reiter 
 ``` 
+
+### Avoiding upgrade conflicts on .yaml files
+"in most projects we directly modify files installed in config/packages which cause issues on upgrades especially when you had to merge ibexa branch into your repo. now with recipes its a bit easier but still you need to solve all conflicts.
+one thing we did in one project to mitigate that was to add extra folder with all app related overrides, so our files merged with base values and are untouched during upgrade, you still need to compare configs on upgrade"
+- Marek Iwaniak (2026-06-22 Slack)
+```
+    protected function configureContainer(ContainerConfigurator $container): void
+    {
+        $container->import('../config/{packages}/*.yaml');
+        $container->import('../config/{packages}/app_config/*.yaml');
+```
