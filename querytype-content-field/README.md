@@ -19,7 +19,7 @@ The usage in .yaml look like this (content type 'news_item' with date field 'pub
                 content_view:
                     full:
                         news_listing:
-                            template: "@ma_user/news_listing/news_listing-full.html.twig"
+                            template: "@CLIENT_USER/news_listing/news_listing-full.html.twig"
                             # DJS custom query with 'content_type/content_field (asc|desc)' awareness
                             controller: app_query::pagingQueryAction
                             params:

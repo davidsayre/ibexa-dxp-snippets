@@ -169,4 +169,4 @@ git pull origin dxp4.6
 * Review the steps above (start of file)
 * SKIP anything with 1-time
 * DO anything with PROD/QA: indicating step needs to be run (in sequence)
-* Test the qa.massaudubon.org
+* Test the QA CLIENT SITE

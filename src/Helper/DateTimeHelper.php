@@ -19,7 +19,6 @@ class DateTimeHelper
     {
         $dateString = trim($dateString); // trim spaces JIC
 
-        // v3 CleanSWell 2024+
         // Try Javascript .toUTCString() .000Z nonstandard format : 2024-05-04T18:42:00.000Z
         // NOTE: The correct ISO format for UTC is: 2024-05-04T02:28:14+00:00 (+00:00 and not the '.000Z' stuff)
         try {
@@ -35,7 +34,6 @@ class DateTimeHelper
             //echo "unable to create date from ZULU ".$e->getMessage()."\n";
         }
 
-        // v3 CleanSWell 2024+
         // Try Javascript LOCAL time (not UTC) .toISO() with .000 milliseconds : 2004-02-12T15:19:21.123+00:00
         try {
             $isoTimezone = DateTime::createFromFormat('Y-m-d\TH:i:s.uP', $dateString);
@@ -79,7 +77,7 @@ class DateTimeHelper
             // echo "Unable to create date from timestamp ".$e->getMessage()."\n";
         }
 
-        // v2 CleanSwell long date Y-m-d h:i:s
+        // try long date Y-m-d h:i:s
         // assume timezone assume UTC ???
         try {
             $shortDate = DateTime::createFromFormat("Y-m-d h:i:s", $dateString);
@@ -92,7 +90,7 @@ class DateTimeHelper
             // echo "Unable to create date from trimed short date ".$e->getMessage()."\n";
         }
 
-        // v2 CleanSwell short date Y-m-d
+        // try short date Y-m-d
         // assume timezone assume UTC ???
         try {
             $shortDate = DateTime::createFromFormat("Y-m-d", $dateString);

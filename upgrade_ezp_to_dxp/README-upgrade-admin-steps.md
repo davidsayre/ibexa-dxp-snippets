@@ -15,8 +15,8 @@ The Gray EDIT does NOT indicate invalid!!!
 + Comparison > all
 - role.*
 - Content / Bookmark
-+ user login (admin,site,ma_user)
-+ user login (site,ma_user)  
++ user login (admin,site,CLIENT_USER)
++ user login (site,CLIENT_USER)  
 + URL all
 + section 'view'
 
@@ -72,7 +72,7 @@ HOLD
 
 * Run draft cleanup
 * new nav button to preview on front end
-* System URL url hyperlinked to dxp.massaudubon.org
+* System URL url hyperlinked to CLIENT URL
 * every 6 hours database export
 
 * RENAME landing to layout
@@ -90,22 +90,14 @@ Add new Promo Archiver which has
 + Remove Promo *
 + hide Promo *
 
-## Add pagebuilder to these existing classes
+## Add pagebuilder to existing classes
 
-* content > frontpage  http://localhost:42080/admin/contenttypegroup/1/contenttype/38
-* content > landing_page http://localhost:42080/admin/contenttypegroup/1/contenttype/21  (careful errors / large / SQL fixes )
-* content > press_listing http://localhost:42080/admin/contenttypegroup/1/contenttype/61
-* content > news_listing http://localhost:42080/admin/contenttypegroup/1/contenttype/50
+* content > frontpage 
+* content > landing_page (careful errors / large / SQL fixes )
+* content > press_listing 
+* content > news_listing 
 
 SKIP: * promos > promo_folder
-
-* mass audubon > camp http://localhost:42080/admin/contenttypegroup/5/contenttype/59 (careful errors / large / SQL fixes )
-SKIP: * mass audubon > exhibit_listing http://localhost:42080/admin/contenttypegroup/5/contenttype/80
-SKIP: * mass audubon > job_listing  http://localhost:42080/admin/contenttypegroup/5/contenttype/78
-* mass audubon > sanctuary http://localhost:42080/admin/contenttypegroup/5/contenttype/58
-SKIP: * mass audubon > sanctuary_job_listing http://localhost:42080/admin/contenttypegroup/5/contenttype/91
-SKIP: * mass audubon > voice_of_audubon http://localhost:42080/admin/contenttypegroup/1/contenttype/93
-
 
 ### NEW Content Type: activity_icon ===
 
