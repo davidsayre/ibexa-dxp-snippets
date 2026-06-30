@@ -35,6 +35,7 @@ class ValidateContentVersionCommand extends Command
     private $contentNameTable = 'ibexa_content_name';
     private $contentVersionTable = 'ibexa_content_version';
     private $contentVersionVersionField = 'content_version';
+    private $contentVersionField = 'version';
 
     public function __construct(
         Connection      $connection,
@@ -172,10 +173,23 @@ class ValidateContentVersionCommand extends Command
         // Summary:
         $output->writeln(sprintf("Query [%s] rows invalid versions, processed: %s, Offset %s, limit %s", count($contentMissingAnyVersionRows), $count, $offset, $limit));
 
+        // Part 4: check for versions missing content match
+        if (!empty($contentId) && is_numeric($contentId)) {
+            $anyVersionMissingContentRows = array(array('id' => $contentId));
+        } else {
+            $anyVersionMissingContentRows = $this->queryAnyVersionMissingContent($offset, $limit);
+        }
+        $count = 0 + $offset;
+        foreach ($anyVersionMissingContentRows as $row) {
+            $count++;
+            $this->logger->error("any version contentID: [" . $row['id'] . "] version [" . $row['version'] . "] is missing content");
+            $sql = "/* SQL */ " . $this->generateSQLDeleteInvalidVersions($row['id'], $row['version']);
+            $output->writeln($sql);
+        }
+        // Summary:
+        $output->writeln(sprintf("Query [%s] rows invalid versions, processed: %s, Offset %s, limit %s", count($anyVersionMissingContentRows), $count, $offset, $limit));
+
         // TODO: Part 3: check for names missing content (reverse)
-
-        // TODO: Part 4: check for versions missing content (reverse)
-
 
         $output->writeln(">> Check the .log file for SQL");
         return Command::SUCCESS;
@@ -241,6 +255,17 @@ class ValidateContentVersionCommand extends Command
         return $sql;
     }
 
+
+    protected function generateSQLDeleteInvalidVersions($contentId, $version) {
+        if (empty($contentId) || empty($version)) {
+            return false;
+        }
+        $sql = sprintf("delete from %s where contentobject_id = :id and %s = :version;", $this->contentVersionTable, $this->contentVersionVersionField);
+        $sql = str_replace(':id', $contentId, $sql);
+        $sql = str_replace(':version', $version, $sql);
+        return $sql;
+    }
+
     protected function queryContentListMissingName($offset, $limit)
     {
         // get set of contentIDs where missing from name table
@@ -278,6 +303,22 @@ class ValidateContentVersionCommand extends Command
         $qb->select("c.id");
         $qb->from($this->contentTable, 'c');
         $qb->where(sprintf("c.id not in (select contentobject_id from %s) ", $this->contentVersionTable));
+        $qb->setMaxResults($limit);
+        $qb->setFirstResult($offset);
+
+        $this->output->writeln($qb->getSQL());
+
+        return $qb->execute()->fetchAllAssociative();
+    }
+
+    protected function queryAnyVersionMissingContent($offset, $limit)
+    {
+
+        // get set of contentIDs and versions where version points to a missing content
+        $qb = $this->connection->createQueryBuilder();
+        $qb->select("n.contentobject_id as id, n.version as version, concat('id_',n.contentobject_id,'-version_',n.version) as compound_key");
+        $qb->from($this->contentVersionTable, 'n');
+        $qb->where(sprintf("concat('id_',n.contentobject_id,'-version_',n.version) not in ( select concat('id_',v.contentobject_id,'-version_',v.content_version) as compound_key from %s v )", $this->contentNameTable));
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
 
