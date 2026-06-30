@@ -34,8 +34,9 @@ class ValidateContentVersionCommand extends Command
     private $contentTable = 'ibexa_content';
     private $contentNameTable = 'ibexa_content_name';
     private $contentVersionTable = 'ibexa_content_version';
-    private $contentVersionVersionField = 'content_version';
-    private $contentVersionField = 'version';
+    private $contentVersionVersionField = 'version';
+    private $contentNameVersionField = 'content_version';
+    private $contentVersionField = 'current_version';
 
     public function __construct(
         Connection      $connection,
@@ -249,7 +250,7 @@ class ValidateContentVersionCommand extends Command
         if (empty($contentId) || empty($version)) {
             return false;
         }
-        $sql = sprintf("delete from %s where contentobject_id = :id and %s = :version;", $this->contentNameTable, $this->contentVersionVersionField);
+        $sql = sprintf("delete from %s where contentobject_id = :id and %s = :version;", $this->contentNameTable, $this->contentNameVersionField);
         $sql = str_replace(':id', $contentId, $sql);
         $sql = str_replace(':version', $version, $sql);
         return $sql;
@@ -285,9 +286,9 @@ class ValidateContentVersionCommand extends Command
     {
         // get set of contentIDs and versions where ezcontentobject_name points to a missing content version
         $qb = $this->connection->createQueryBuilder();
-        $qb->select("n.contentobject_id as id, n.content_version as version, concat('id_',n.contentobject_id,'-version_',n.content_version) as compound_key");
+        $qb->select(sprintf("n.contentobject_id as id, n.%s as version, concat('id_',n.contentobject_id,'-version_',n.%s) as compound_key",$this->contentNameVersionField,$this->contentNameVersionField));
         $qb->from($this->contentNameTable, 'n');
-        $qb->where(sprintf("concat('id_',n.contentobject_id,'-version_',n.content_version) not in ( select concat('id_',v.contentobject_id,'-version_',v.version) as compound_key from %s v )", $this->contentVersionTable));
+        $qb->where(sprintf("concat('id_',n.contentobject_id,'-version_',n.%s) not in ( select concat('id_',v.contentobject_id,'-version_',v.%s) as compound_key from %s v )", $this->contentNameVersionField, $this->contentVersionVersionField, $this->contentVersionTable));
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
 
@@ -316,9 +317,9 @@ class ValidateContentVersionCommand extends Command
 
         // get set of contentIDs and versions where version points to a missing content
         $qb = $this->connection->createQueryBuilder();
-        $qb->select("n.contentobject_id as id, n.version as version, concat('id_',n.contentobject_id,'-version_',n.version) as compound_key");
+        $qb->select(sprintf("n.contentobject_id as id, n.%s as version, concat('id_',n.contentobject_id,'-version_',n.%s) as compound_key",$this->contentVersionVersionField,$this->contentVersionVersionField));
         $qb->from($this->contentVersionTable, 'n');
-        $qb->where(sprintf("concat('id_',n.contentobject_id,'-version_',n.version) not in ( select concat('id_',v.contentobject_id,'-version_',v.content_version) as compound_key from %s v )", $this->contentNameTable));
+        $qb->where(sprintf("concat('id_',n.contentobject_id,'-version_',n.%s) not in ( select concat('id_',v.contentobject_id,'-version_',v.%s) as compound_key from %s v )", $this->contentVersionVersionField, $this->contentNameVersionField, $this->contentNameTable));
         $qb->setMaxResults($limit);
         $qb->setFirstResult($offset);
 
