@@ -81,7 +81,7 @@ class BaseContentViewPaginatedController extends Controller {
 
     /**
      * Call in controller function when you need to enable public with short ttl
-     * Any caching is better than nothing, espectially for search and form pages.
+     * Any caching is better than nothing, especially for search and form pages.
      * @param $view
      * @param $ttl
      * @return void
