@@ -14,14 +14,9 @@ use Twig\TwigFunction;
 
 class AncestorsTwigExtension extends AbstractExtension
 {
-    /** @var \Symfony\Component\Routing\RouterInterface */
-    protected $router;
-
-    /** @var LocationService */
-    protected $locationService;
-
-    /** @var SearchService */
-    protected $searchService;
+    protected RouterInterface $router;
+    protected LocationService $locationService;
+    protected SearchService $searchService;
 
     /**
      * SvgTwigExtension constructor.
@@ -39,10 +34,7 @@ class AncestorsTwigExtension extends AbstractExtension
     public function getFunctions()
     {
         return [
-            new TwigFunction('ancestors', [
-                $this,
-                'getAncestors'
-            ]),
+            new TwigFunction('ancestors', [$this, 'getAncestors']),
         ];
     }
 

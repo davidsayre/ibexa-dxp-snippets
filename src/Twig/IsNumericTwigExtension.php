@@ -17,7 +17,8 @@ class IsNumericTwigExtension extends AbstractExtension
 
     public function isNumeric($value)
     {
-        return  is_numeric($value);
+        return is_numeric($value);
     }
 }
+
 ?>

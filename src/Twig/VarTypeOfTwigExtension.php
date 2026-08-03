@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
+
 namespace App\Twig;
+
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
@@ -13,17 +15,13 @@ class VarTypeOfTwigExtension extends AbstractExtension
     public function getFunctions()
     {
         return [
-            new TwigFunction('var_type_of', [
-                $this,
-                'var_type_of',
-            ]),
+            new TwigFunction('var_type_of', [$this, 'var_type_of']),
         ];
     }
 
-    public function var_type_of($var, $typeTest=null, $className=null)
+    public function var_type_of($var, $typeTest = null, $className = null)
     {
-        switch ($typeTest)
-        {
+        switch ($typeTest) {
             default:
                 return false;
                 break;

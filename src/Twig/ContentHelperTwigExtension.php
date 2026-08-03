@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
+use Exception;
 use Ibexa\Contracts\Core\Repository\ContentService;
+use Ibexa\Contracts\Core\Repository\Exceptions\NotFoundException;
+use Ibexa\Contracts\Core\Repository\Exceptions\UnauthorizedException;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
+use Ibexa\Contracts\Core\Repository\Values\Content\Content;
 
 /**
  * Content lookup and manipulate helper twig functions
@@ -15,12 +19,9 @@ use Twig\TwigFunction;
 class ContentHelperTwigExtension extends AbstractExtension
 {
 
-    /** @var \Ibexa\Contracts\Core\Repository\ContentService */
-    private $contentService;
 
-    /**
-     * @param \Ibexa\Contracts\Core\Repository\ContentService $contentService
-     */
+    private ContentService $contentService;
+
     public function __construct(ContentService $contentService)
     {
         $this->contentService = $contentService;
@@ -42,16 +43,17 @@ class ContentHelperTwigExtension extends AbstractExtension
      * This is a basic utility for getting the full content object from just the contentId
      * The use case is for converting an imageasset field's destinationContentId into the image content object
      * @param $contentId
-     * @return \Ibexa\Contracts\Core\Repository\Values\Content\Content|null
+     * @return Content|null
      */
-    public function contentIdToContent($contentId) {
-        if(empty($contentId)) {
+    public function contentIdToContent($contentId): ?Content
+    {
+        if (empty($contentId)) {
             return null;
         }
-        try{
+        try {
             $contentId = intval($contentId);
             return $this->contentService->loadContent($contentId);
-        } catch(\Exception $e) {
+        } catch (Exception $e) {
 
         }
         return null;
@@ -61,10 +63,11 @@ class ContentHelperTwigExtension extends AbstractExtension
      * From: vendor/ibexa/fieldtype-page/src/lib/FieldType/Page/Block/Event/Listener/EmbedBlockListener.php
      * @param $contentId
      * @return int|null
-     * @throws \Ibexa\Contracts\Core\Repository\Exceptions\NotFoundException
-     * @throws \Ibexa\Contracts\Core\Repository\Exceptions\UnauthorizedException
+     * @throws NotFoundException
+     * @throws UnauthorizedException
      */
-    public function contentIdToMainLocationId($contentId) {
+    public function contentIdToMainLocationId($contentId): ?int
+    {
         $contentId = intval($contentId, 10);
         if (!$contentId) {
             return 0;
@@ -77,7 +80,8 @@ class ContentHelperTwigExtension extends AbstractExtension
      * @param $aContentIds
      * @return int[]
      */
-    public function contentIdsToMainLocationIds($aContentIds) {
+    public function contentIdsToMainLocationIds($aContentIds): array
+    {
         $aLocationIds = [];
         foreach ($aContentIds as $iContentId) {
             $iLocationId = $this->contentIdToMainLocationId(intval($iContentId));
