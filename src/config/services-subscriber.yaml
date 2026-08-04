@@ -1,4 +1,4 @@
 services:
-  App\Event\Subscriber\PublishVersion\NavItemOnPublishVersionSubscriber:
+  App\Services\PurgeClientService:
     arguments:
       $purgeClient: '@ibexa.http_cache.purge_client'

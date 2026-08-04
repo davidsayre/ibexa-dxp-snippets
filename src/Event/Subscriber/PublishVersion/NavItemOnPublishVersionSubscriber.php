@@ -3,23 +3,23 @@ declare(strict_types=1);
 
 namespace App\Event\Subscriber\PublishVersion;
 
+use App\Services\PurgeClientService;
 use Ibexa\Contracts\Core\Repository\Events\Content\PublishVersionEvent;
 use Ibexa\Contracts\HttpCache\Handler\ContentTagInterface;
 use Ibexa\Contracts\HttpCache\PurgeClient\PurgeClientInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-/* NOTE: must add src/config/services.yaml entry to inject $purgeClient */
-
 class NavItemOnPublishVersionSubscriber implements EventSubscriberInterface
 {
     const CONTENT_TYPE_IDENTIFIER = 'nav_item';
 
-    protected $purgeClient;
+    // App service injected from services.yaml
+    protected PurgeClientInterface $purgeClient;
 
     public function __construct(
-        // PurgeClientInterface $purgeClient
+        PurgeClientService $purgeClientService
     ) {
-        // $this->purgeClient = $purgeClient;
+        $this->purgeClient = $purgeClientService->getClient();
     }
 
     public static function getSubscribedEvents(): array
@@ -37,9 +37,9 @@ class NavItemOnPublishVersionSubscriber implements EventSubscriberInterface
         if ($contentType->identifier === self::CONTENT_TYPE_IDENTIFIER) {
             try {
                 $tags = [ContentTagInterface::CONTENT_TYPE_PREFIX . $contentType->id];
-                // $this->purgeClient->purge($tags);
+                $this->purgeClient->purge($tags);
             } catch(\Exception $e) {
-                // do nothing
+                 // do nothing
             }
         }
     }
