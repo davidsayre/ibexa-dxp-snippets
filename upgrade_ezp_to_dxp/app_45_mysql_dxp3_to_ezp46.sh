@@ -24,5 +24,3 @@ docker compose exec -u www-data app /bin/bash -c "mysql --ssl=false -h db dxp -u
 docker compose exec -u www-data app /bin/bash -c "mysql --ssl=false -h db dxp -udxp -pdxp --force < /app/vendor/ibexa/installer/upgrade/db/mysql/ibexa-4.6.24-to-4.6.25.sql"
 docker compose exec -u www-data app /bin/bash -c "mysql --ssl=false -h db dxp -udxp -pdxp --force < /app/vendor/ibexa/installer/upgrade/db/mysql/ibexa-4.6.3-to-4.6.4.sql"
 echo "recommend mysqldump after completed"
-
-# TODO 4.5 to 4.6
