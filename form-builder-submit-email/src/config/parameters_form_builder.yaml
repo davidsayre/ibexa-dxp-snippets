@@ -1,0 +1,12 @@
+parameters:
+  # example: form object 12345
+  app.form_builder.email_user.12345.template: themes/standard/email/example.email.twig
+  app.form_builder.email_user.12345.field: email
+  app.form_builder.email_user.12345.subject: Thank you for signing up
+
+  # special 'append' content object to fetch and pull fields (as strings) into email template
+  # NOTE: Symfony messenger serialization does not support complex object types (always strings or arrays)
+  app.form_builder.email_user.12345.add_content.id: 4567
+  app.form_builder.email_user.12345.add_content.fields:
+   - email_purchase_url
+   - email_subject

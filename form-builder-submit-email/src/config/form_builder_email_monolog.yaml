@@ -1,0 +1,14 @@
+monolog:
+  channels:
+    - "formbuilderuseremail"
+  handlers:
+    formbuilderuseremail_debug:
+      type:   stream
+      path:   "%kernel.logs_dir%/formbuilderuseremail_debug.log"
+      level:  debug
+      channels: [ formbuilderuseremail ]
+    formbuilderuseremail_error:
+      type:   stream
+      path:   "%kernel.logs_dir%/formbuilderuseremail_error.log"
+      level:  error
+      channels: [ formbuilderuseremail ]
