@@ -1,0 +1,15 @@
+## Append this to the config/packages/ibexa.yaml
+
+ibexa:
+  system:
+    default:
+
+      # ....
+
+      # enable or user-menu will error
+      universal_discovery_widget_module:
+        configuration:
+          richtext_embed:
+            multiple: false
+            active_sort_clause: 'ContentName'
+            active_sort_order: 'ascending'
