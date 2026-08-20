@@ -10,21 +10,65 @@ We don't want people creating things they should not
 ## Cleanup OLD Role policies that no longer exist
 The Gray EDIT does NOT indicate invalid!!!
 
-### ROLE: Base Editor
-
-+ Comparison > all
+### ROLE: Base Editor remove old policies
 - role.*
-- Content / Bookmark
-+ user login (admin,site,CLIENT_USER)
-+ user login (site,CLIENT_USER)  
-+ URL all
-+ section 'view'
+
+### ROLE: Base Editor (Policies to copy)
+```
+Content	/ Bookmark	None
+Content	/ Dashboard	None
+Content	/ Diff	None
+Content	/ Pendinglist	None
+Content	/ Read Section: Standard
+Content	/ Read Location: /Media
+Content	/ Read Location: /Multisite
+Content	/ Read Section: Standard
+Content / Read Section: Taxonomy
+Content	/ Translate	None
+Content	/ Versionread	None
+Content	/ Versionremove Owner: Self
+Content	/ View_embed	None 
+Netgen Tags	/ Read	None
+Netgen Tags	/ Search	None
+Netgen Tags	/ View	None
+User	/ Login SiteAccess: site
+User	/ Login SiteAccess: admin
+User	/ Password	None
+User	/ Preferences	None
+User	/ Selfedit	None
+Comparison	/ All functions	None
+URL	/ All functions	None
+Section	/ View	None
+Content	/ Publish	None
+Content	/ Reverserelatedlist	None
+Activity Log	/ Read	None
+Content	Read / Owner: Self Section: Users
+```
+
+```
+Dashboard / Customize
+Content / Read Subtree: /Dashboards
+Content / Edit Subtree: /Dashboards/User Dashboards   Owner: Self
+Content / Publish Subtree: /Dashboards/User Dashboards  Owner: Self
+Content / Versionread Subtree: /Dashboards  Owner: Self
+```
+
+### Manually Setup Admin > Dashboards > Predefined Dashboards > Default Dashboard
+* You must add blocks / layout into the 'Default Dashboard' in order to be copied
+Choose layout 'Three Rows Two Columns'
+
+#### Default blocks (but I would swap Ibexa news for 'Review Queue')
+* Top: Block 'Quick Actions'
+* Left: Block 'Recent Activity'
+* Right: Block 'Ibexa News'
+* Bottom: Block 'Review Queue'
+* Bottom: Block 'Common Content'
 
 ### ROLE: Site Editor
 
 + Segment group
 + Segment
-TBD: Netgen tags All (though subtree may not work)
++ TBD: Netgen tags All (though subtree may not work)
 
 ### ROLE: Tags Admin (assign to Admins)
 + Netgen Tags	Dashboard
@@ -40,132 +84,49 @@ TBD: Netgen tags All (though subtree may not work)
 + HOLD:  Netgen Tags Delete
 
 ### ROLE: Tags Editor (assign to Editors)
-+ Netgen Tags	Dashboard
-+ Netgen Tags	Edit
-+ Netgen Tags	Id
-+ Netgen Tags	Read
-+ Netgen Tags	Search
-+ Netgen Tags	View
-+ Netgen Tags	Addsynonym
-+ Netgen Tags	Editsynonym
-+ Netgen Tags	Deletesynonym
-+ Netgen Tags	Makesynonym
++ Netgen Tags / Dashboard
++ Netgen Tags / Edit
++ Netgen Tags / Id
++ Netgen Tags / Read
++ Netgen Tags / Search
++ Netgen Tags / View
++ Netgen Tags / Addsynonym
++ Netgen Tags / Editsynonym
++ Netgen Tags / Deletesynonym
++ Netgen Tags / Makesynonym
 
-Since layout page is the new default content page, grant to editors / admins
+Check all Content Type specific permissions for Site Editors / Site Admins
 
-+ Content create layout page under layout page
-+ Content edit layout page
-+ Content remove layout page
-+ Content publish layout page
++ Content create / layout page & parent content type layout page
++ Content edit / layout page
++ Content remove / layout page
++ Content publish / layout page
 
-### ROLE: Site Admin 
+### ROLE: Site Admin
 
-* Anonymous
-  - role.*
-  + Netgen tags Read
-  + section ALL << must have 'view'
+### ROLE: Anonymous
+- role.*
++ Netgen tags / Read
++ Section / View << must have 'view'
 
-   
-HOLD
-* Company Application
-* Personalization (subscription)
+### Extra Steps:
+* Run draft cleanup CLI
+* MOVE old/unused fields into new field group 'legacy' per content Type
+* Create new documentation for content entry
 
-* Run draft cleanup
-* new nav button to preview on front end
-* System URL url hyperlinked to CLIENT URL
-* every 6 hours database export
 
-* RENAME landing to layout
-* ROLE: content page remove permission content > create
-* MOVE lots of fields into new field group 'legacy'
-* Rename body > body (legacy)
+## Add 'ezlandingpage' field to existing classes
 
-* documentation - page builder blocks (examples)
-* documentation - content_page / legacy fields
+* content > frontpage  
+* content > landing_page 
+* content > press_listing
+* content > news_listing
+* etc...
 
-## DECOM ROLE: Promo Admin
-Remove Promo Admin permission from MA Admin
-Add new Promo Archiver which has
-+ Edit Promo *
-+ Remove Promo *
-+ hide Promo *
-
-## Add pagebuilder to existing classes
-
-* content > frontpage 
-* content > landing_page (careful errors / large / SQL fixes )
-* content > press_listing 
-* content > news_listing 
-
-SKIP: * promos > promo_folder
-
-### NEW Content Type: activity_icon ===
-
-### NEW Content Type: facility_icon ===
-
-### NEW Content Type: testimonial ===
 
 ### see fix var .sql
 
-### You must re-edit every content type when a new block is added :(
-### You must regenerate graphql when a new block is added :(
+### PAGE BUILDER: You must re-edit every content type when a new block is configured :(
+### PAGE BUILDER: You must regenerate graphql when a new block is configured :(
 
 --------------------------
-
-### Content Type: Camp
-ADD: ezimageasset - background_asset / Background Image
-ADD: ezimageasset - asset / Image Asset
-ADD: ezlandingpage - page / Page Builder
-RENAME: image - Image (legacy/do not use)
-
-### Content Type: Content Page
-ADD: ezimageasset - asset / Image Asset
-RENAME: image - Image (legacy/do not use)
-RENAME: thumbnail caption (legacy/do not use)
-RENAME: thumbnail credit  (legacy/do not use)
-DEL: image size
-DEL: override layout
-
-### Content Type: Content Page
-ADD: ezimageasset - asset / Image Asset
-RENAME: image - Image (legacy/do not use)
-RENAME: thumbnail caption (legacy/do not use)
-RENAME: thumbnail credit  (legacy/do not use)
-DEL: image size
-DEL: override layout
-
-### DECOM Content Type: event
-RENAME CLASS: Event (legacy/do not use)
-
-### DECOM Content Type: event calendar
-RENAME CLASS: Event calendar (legacy/do not use)
-
-### RENAME Content Type: Landing page >> Layout Page
-ADD: ezimageasset - background_asset / Background Image
-ADD: ezimageasset - asset / Image Asset
-ADD: ezlandingpage - page / Page Builder
-RENAME: Image (legacy/do not use)
-
-### Content Type: News Story
-ADD: ezimageasset - background_asset / Background Image
-ADD: ezimageasset - asset / Image Asset
-RENAME: Image (legacy/do not use)
-ADD: ezlandingpage - Page Builder
-DEL: override layout
-
-### Content Type: Press Item
-ADD: ezimageasset - asset / Image Asset
-RENAME: image - Image (legacy/do not use)
-
-### Content Tyoe: Sanctuary
-ADD: ezimageasset - asset / Image Asset
-RENAME: image - Image (legacy/do not use)
-RENAME: caption - Image Caption (legacy/do not use)
-RENAME: credits - Image Credits (legacy/do not use)
-
-### CONTENT TYPE FIELD GUIDELINES
-page : ezlandingpage / Page Builder / Page Builder
-background_asset: ezimageasset / Background Image
-asset: ezimageasset  / Image Asset - Primary 3:2 image for listings, blocks, share
-
-

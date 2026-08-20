@@ -1,7 +1,7 @@
 ibexa_fieldtype_richtext:
     custom_tags:
         panel:
-            template: '@standard/ezrichtext/custom_tags/panel.html.twig'
+            template: '@standard/ibexa_richtext/custom_tags/panel.html.twig'
             icon: "/bundles/ibexaicons/img/all-icons.svg#wand"
             attributes:
                 title:
@@ -14,12 +14,11 @@ ibexa_fieldtype_richtext:
                     type: string
                     required: false
 
-# https://github.com/ezsystems/ezplatform-rawhtml-richtext-tag/tree/master/Resources/config
 ibexa:
     system:
         admin_group:
             fieldtypes:
-                ezrichtext:
+                ibexa_richtext:
                     custom_tags:
                         - panel
                     toolbar:

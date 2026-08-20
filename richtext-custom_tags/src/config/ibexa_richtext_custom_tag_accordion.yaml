@@ -1,8 +1,8 @@
 ibexa_fieldtype_richtext:
     custom_tags:
-        alert:
-            template: '@standard/ibexa_richtext/custom_tags/alert.html.twig'
-            icon: "/bundles/ibexaicons/img/all-icons.svg#wand"
+        accordion:
+            template: '@standard/ibexa_richtext/custom_tags/accordion.html.twig'
+            icon: '/bundles/ibexaicons/img/all-icons.svg#menu'
             attributes:
                 title:
                     type: string
@@ -14,9 +14,9 @@ ibexa:
             fieldtypes:
                 ibexa_richtext:
                     custom_tags:
-                        - alert
+                        - accordion
                     toolbar:
                         custom_tags_group:
                             buttons:
-                                alert:
+                                accordion:
                                     priority: 92
