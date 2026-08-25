@@ -1,0 +1,6 @@
+# THIS IS REQUIRED to fix eng-GB content type creation issues
+ibexa:
+    system:
+        default:
+            languages:
+                - eng-US

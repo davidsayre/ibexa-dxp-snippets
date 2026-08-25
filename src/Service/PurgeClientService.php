@@ -1,5 +1,6 @@
 <?php
 
+namespace App\Service;
 
 use Ibexa\Contracts\HttpCache\PurgeClient\PurgeClientInterface;
 
@@ -9,7 +10,8 @@ class PurgeClientService
 
     public function __construct(
         PurgeClientInterface $purgeClient
-    ) {
+    )
+    {
         $this->purgeClient = $purgeClient;
     }
 

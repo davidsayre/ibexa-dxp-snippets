@@ -1,4 +1,4 @@
 services:
-  App\Services\PurgeClientService:
+  App\Service\PurgeClientService:
     arguments:
       $purgeClient: '@ibexa.http_cache.purge_client'
