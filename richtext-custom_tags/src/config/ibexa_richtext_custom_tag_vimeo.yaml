@@ -2,7 +2,8 @@ ibexa_fieldtype_richtext:
     custom_tags:
         vimeo:
             template: '@standard/ibexa_richtext/custom_tags/vimeo.html.twig'
-            icon: "/bundles/ibexaicons/img/all-icons.svg#video"
+#            icon: "/bundles/ibexaicons/img/all-icons.svg#video"
+            icon: '/bundles/ibexaadminuiassets/vendors/ids-assets/dist/img/all-icons.svg#video'
             attributes:
                 title:
                     type: string

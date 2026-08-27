@@ -2,7 +2,8 @@ ibexa_fieldtype_richtext:
     custom_tags:
         accordion:
             template: '@standard/ibexa_richtext/custom_tags/accordion.html.twig'
-            icon: '/bundles/ibexaicons/img/all-icons.svg#menu'
+#            icon: '/bundles/ibexaicons/img/all-icons.svg#menu'
+            icon: '/bundles/ibexaadminuiassets/vendors/ids-assets/dist/img/all-icons.svg#menu-hamburger'
             attributes:
                 title:
                     type: string
