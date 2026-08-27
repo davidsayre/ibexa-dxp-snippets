@@ -73,7 +73,7 @@ class ValidateContentRelationsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Validate Richtext')
+            ->setDescription('Validate Content Field Relations')
             ->addOption(
                 'content-id',
                 null,

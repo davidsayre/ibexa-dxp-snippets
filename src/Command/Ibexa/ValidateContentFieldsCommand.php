@@ -70,7 +70,7 @@ class ValidateContentFieldsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Validate Richtext')
+            ->setDescription('Validate Content Fields')
             ->addOption(
                 'content-id',
                 null,
