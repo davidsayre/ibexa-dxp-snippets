@@ -1,0 +1,16 @@
+framework:
+    mailer:
+        dsn: '%env(MAILER_DSN)%'
+        envelope:
+            sender: '%env(SENDER_ADDRESS)%'
+            #recipients: ['foo@example.com', 'bar@example.com']
+        headers:
+            From: '%env(SENDER_ADDRESS)%'
+#            Bcc: 'user@comany.com'
+#            X-Custom-Header: 'foobar'
+
+## edit .env.local
+#
+# must be url encoded
+# MAILER_DSN=smtp://...
+# SENDER_ADDRESS=no-reply@example.com
