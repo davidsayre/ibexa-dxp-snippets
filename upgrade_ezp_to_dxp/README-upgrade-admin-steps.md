@@ -10,41 +10,62 @@ We don't want people creating things they should not
 ## Cleanup OLD Role policies that no longer exist
 The Gray EDIT does NOT indicate invalid!!!
 
-### ROLE: Base Editor remove old policies
+### ROLE: Anonymous (to copy)
+```
 - role.*
+# HOLD: Content Create / Change Owner: -1; Content type: Corporate Account Application; Content type of Parent: Folder; Subtree: /Corporate Account Applications
+Content Pdf / Section: Standard
+Content Read / Content type: File; Section: Media
+Content Read / Content type: File; Section: Media; Subtree: /Media/Files
+# HOLD: Content Read / Content type: Folder; Location: /Corporate Account Applications
+Content Read / Content type: Image; Section: Media; Subtree: /Media/Images
+Content Read / Section: Products Taxonomy
+Content Read / Section: Standard
+# HOLD: Content Read / Section: Standard; State: Review State:Approved
+Content Read / Section: Taxonomy
+Content View_embed / None
+Netgen Tags Read / None
+Netgen Tags view / None
+Section / View      # must have 'view' else error 
+Taxonomy Read / Taxonomy: Product categories
+Taxonomy Read / Taxonomy: Tags
+User Login / SiteAccess: site
+```
 
 ### ROLE: Base Editor (Policies to copy)
 ```
-Content	/ Bookmark	None
-Content	/ Dashboard	None
-Content	/ Diff	None
-Content	/ Pendinglist	None
-Content	/ Read Section: Standard
-Content	/ Read Location: /Media
-Content	/ Read Location: /Multisite
-Content	/ Read Section: Standard
-Content / Read Section: Taxonomy
-Content	/ Translate	None
-Content	/ Versionread	None
-Content	/ Versionremove Owner: Self
-Content	/ View_embed	None 
-Netgen Tags	/ Read	None
-Netgen Tags	/ Search	None
-Netgen Tags	/ View	None
-User	/ Login SiteAccess: site
-User	/ Login SiteAccess: admin
-User	/ Password	None
-User	/ Preferences	None
-User	/ Selfedit	None
-Comparison	/ All functions	None
-URL	/ All functions	None
-Section	/ View	None
-Content	/ Publish	None
-Content	/ Reverserelatedlist	None
-Activity Log	/ Read	None
-Content	Read / Owner: Self Section: Users
+- role.*
+Content	Bookmark / None
+Content	Dashboard / None
+Content	Diff / None
+Content	Pendinglist	/ None
+Content	Read / Section: Standard
+Content	Read / Location: /Media
+Content	Read / Location: /Multisite
+Content	Read / Section: Standard
+Content Read / Section: Taxonomy
+Content	Translate / None
+Content	Versionread / None
+Content	Versionremove Owner: Self
+Content	View_embed / None 
+Netgen Tags	Read / None
+Netgen Tags	Search / None
+Netgen Tags	View / None
+User Login / SiteAccess: site
+User Login / SiteAccess: admin
+User Password / None
+User Preferences / None
+User Selfedit / None
+Comparison All functions / None
+URL	View / none ( hold on ALL )
+Section	View / None
+Content	Publish / None # TBD this could be limited
+Content	Reverse related list / None
+Activity Log Read / Only own logs
+Content	Read / Owner: Self & Section: Users
 ```
 
+### ROLE: Base Editor (Policies to copy)
 ```
 Dashboard / Customize
 Content / Read Subtree: /Dashboards
@@ -55,7 +76,7 @@ Content / Versionread Subtree: /Dashboards  Owner: Self
 
 ### Manually Setup Admin > Dashboards > Predefined Dashboards > Default Dashboard
 * You must add blocks / layout into the 'Default Dashboard' in order to be copied
-Choose layout 'Three Rows Two Columns'
+  Choose layout 'Three Rows Two Columns'
 
 #### Default blocks (but I would swap Ibexa news for 'Review Queue')
 * Top: Block 'Quick Actions'
@@ -65,10 +86,11 @@ Choose layout 'Three Rows Two Columns'
 * Bottom: Block 'Common Content'
 
 ### ROLE: Site Editor
-
 + Segment group
 + Segment
 + TBD: Netgen tags All (though subtree may not work)
+
+### ROLE: Site Admin
 
 ### ROLE: Tags Admin (assign to Admins)
 + Netgen Tags	Dashboard
@@ -102,12 +124,6 @@ Check all Content Type specific permissions for Site Editors / Site Admins
 + Content remove / layout page
 + Content publish / layout page
 
-### ROLE: Site Admin
-
-### ROLE: Anonymous
-- role.*
-+ Netgen tags / Read
-+ Section / View << must have 'view'
 
 ### Extra Steps:
 * Run draft cleanup CLI
@@ -117,8 +133,8 @@ Check all Content Type specific permissions for Site Editors / Site Admins
 
 ## Add 'ezlandingpage' field to existing classes
 
-* content > frontpage  
-* content > landing_page 
+* content > frontpage
+* content > landing_page
 * content > press_listing
 * content > news_listing
 * etc...
