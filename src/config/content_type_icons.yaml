@@ -1,0 +1,12 @@
+ibexa:
+    system:
+        default:
+            content_type:
+                # Ibexa 5 iconset
+                # generic
+                documentation_page:
+                    thumbnail: /bundles/ibexaadminuiassets/vendors/ids-assets/dist/img/all-icons.svg#help
+                frontpage:
+                    thumbnail: /bundles/ibexaadminuiassets/vendors/ids-assets/dist/img/all-icons.svg#world-cursor
+                video:
+                    thumbnail: /bundles/ibexaadminuiassets/vendors/ids-assets/dist/img/all-icons.svg#video-play
