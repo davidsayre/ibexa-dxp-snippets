@@ -1,0 +1,24 @@
+services:
+    app_query:
+        alias: App\Controller\Ibexa\QueryType\QueryFieldController
+        public: true
+#Example use in view.yaml
+#ibexa:
+#    system:
+#        site_group:
+#            content_view:
+#                full:
+#                    blog:
+#                        template: "@standard/blog/blog-full.html.twig"
+#                        controller: app_query::pagingQueryAction
+#                        params:
+#                            query:
+#                                query_type: 'Children'
+#                                parameters:
+#                                    content: '@=content'
+#                                    filter:
+#                                        content_type: [ 'blog_post' ]
+#                                assign_results_to: items
+#                                # DJS custom param
+#                                sort_field: 'blog_post/publish_date desc'
+#                                limit: 9
