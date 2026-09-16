@@ -16,7 +16,7 @@ class CacheViewController extends Controller
     /**
      * Example: location_view.yaml
      *   frontpage:
-     *      controller: App\Controller\Content\CacheViewController:index
+     *      controller: App\Controller\Content\CacheViewController::index
      *      template: "@oncolink_user/frontpage/frontpage-full.html.twig"
      *      match:
      *          Identifier\ContentType: frontpage

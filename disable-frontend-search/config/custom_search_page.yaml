@@ -1,12 +1,12 @@
 ibexa:
   system:
-    # or frontend_group:
+    # or frontend_group or site_group:
     site:
       search_view:
         full:
           default:
             # NOTE: requires controller to be installed
-            controller: App\Controller\Content\CacheViewController:index
+            controller: App\Controller\Content\CacheViewController::index
             template: "@standard/search/search_off-full.html.twig"
             match: [ ]
             params:
