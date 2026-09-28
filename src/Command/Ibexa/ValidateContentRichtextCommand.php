@@ -195,6 +195,11 @@ class ValidateContentRichtextCommand extends Command
                         $this->logger->error("content_id: " . $cid . " | field: " . $fieldIdentifier . "");
                         $errors[] = array('content_id' => $cid, 'field' => $fieldIdentifier);
                     }
+
+                    // TODO: check for registered custom_tag entries as these will error in Editor but validate here
+                    // Example: <eztemplate name="line_break".... may not be registered
+
+
                     $output->writeln("");
                 }
             }
