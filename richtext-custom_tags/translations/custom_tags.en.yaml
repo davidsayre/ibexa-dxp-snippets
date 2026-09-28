@@ -1,15 +1,19 @@
 ibexa_richtext.custom_tags.rawhtml.label: 'Raw HTML (legacy/do not use)'
 ibexa_richtext.custom_tags.rawhtml.description: 'Raw HTML'
 ibexa_richtext.custom_tags.rawhtml.attributes.title.label: 'Title'
+
 ibexa_richtext.custom_tags.accordion.label: 'Accordion (Title)'
 ibexa_richtext.custom_tags.accordion.description: 'Accordion expand/colapse'
 ibexa_richtext.custom_tags.accordion.attributes.title.label: 'Title'
+
 ibexa_richtext.custom_tags.separator.label: 'Separator (legacy/do not use)'
 ibexa_richtext.custom_tags.separator.description: 'Separator HR'
 ibexa_richtext.custom_tags.separator.attributes.style.label: 'Style'
+
 ibexa_richtext.custom_tags.factbox.label: 'Factbox'
 ibexa_richtext.custom_tags.factbox.description: 'Factbox with title'
 ibexa_richtext.custom_tags.factbox.attributes.title.label: 'Title'
+
 ibexa_richtext.custom_tags.vimeo.label: 'Vimeo stream'
 ibexa_richtext.custom_tags.vimeo.description: 'Vimeo with title'
 ibexa_richtext.custom_tags.vimeo.attributes.title.label: 'Title'
