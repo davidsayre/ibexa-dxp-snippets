@@ -57,7 +57,7 @@ class ValidateContentVersionCommand extends Command
         $this
             ->setDescription('Validate Content Versions')
             ->addOption(
-                'content_id',
+                'content-id',
                 'i',
                 InputOption::VALUE_REQUIRED,
                 'specific Content ID; else query content by limit'
@@ -91,9 +91,9 @@ class ValidateContentVersionCommand extends Command
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $contentId = $input->getOption('content_id');
+        $contentId = $input->getOption('content-id');
         if (!empty($contentId) && !is_numeric($contentId)) {
-            throw new InvalidArgumentException('content_id optional value has to be an integer.');
+            throw new InvalidArgumentException('content-id optional value has to be an integer.');
         }
         $offset = $input->getOption('offset');
         if (!empty($offset) && !is_numeric($offset)) {
@@ -114,7 +114,7 @@ class ValidateContentVersionCommand extends Command
         $this->ibexaVersion = $this->input->getOption('ibexa-version');
         $this->ibexaVersionTableSwitcher();
 
-        $contentId = $input->getOption('content_id');
+        $contentId = $input->getOption('content-id');
         $offset = intval($input->getOption('offset'));
         $limit = intval($input->getOption('limit'));
 
