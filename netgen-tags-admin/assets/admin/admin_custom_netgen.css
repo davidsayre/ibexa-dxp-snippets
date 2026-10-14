@@ -1,0 +1,9 @@
+/* fix Netgen Admin styling widths */
+.ibexa-main-container__content-column {
+    .ng-tags-app .ng-tags-container {
+        max-width: unset !important;
+    }
+    .ng-tags-app .tags-sidebar {
+        width: unset;
+    }
+}
